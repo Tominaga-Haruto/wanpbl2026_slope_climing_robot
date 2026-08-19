@@ -1,0 +1,8 @@
+{
+    "url": "https://cad.onshape.com/documents/b5fdf23758f99434203a8721/w/c369c118cf65959bd8251b33/e/ff3e910fc2bb41e588e7b3db",
+    "output_format": "urdf",
+    "merge_stls": "all",
+    "simplify_stls": false,
+    "use_collisions_configuration": true,
+    "no_dynamics": true
+}

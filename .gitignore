@@ -1,0 +1,37 @@
+# 秘密情報（APIキー）絶対に上げない
+.env
+**/.env
+
+# Isaac Lab 本体（別リポジトリ）
+IsaacLab/
+
+# 学習ログ・チェックポイント
+logs/
+**/logs/
+
+# 生成物：USD一式
+**/usd/
+**/*.usd
+**/*.usda
+**/*.usdc
+
+# 生成物：メッシュ
+**/*.stl
+**/assets/merged/
+**/*.obj
+**/*.dae
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+isaac_env/
+
+# OS
+.DS_Store
+
+# Onshape部品キャッシュ
+**/*.part
+**/assets/*.part

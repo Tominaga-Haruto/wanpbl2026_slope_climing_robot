@@ -1,0 +1,347 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="myrobot">
+  
+  <link name="base">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1.73" />
+      <inertia ixx="0.004" ixy="0" ixz="0" iyy="0.004" iyz="0" izz="0.004" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="0 0 0" rpy="0 -0 0" />
+      <geometry>
+        <mesh filename="assets/merged/ak10_9_kv60_v3_0_visual.stl" />
+      </geometry>
+      <material name="ak10_9_kv60_v3_0_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 -0 0" />
+      <geometry>
+        <mesh filename="assets/merged/ak10_9_kv60_v3_0_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="lr_haa">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1.02" />
+      <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.003" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="-0.0786216 0.051879 -0.115757" rpy="1.57704 4.8626e-07 2.46986" />
+      <geometry>
+        <mesh filename="assets/merged/ak80_9gear_visual.stl" />
+      </geometry>
+      <material name="ak80_9gear_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.0786216 0.051879 -0.115757" rpy="1.57704 4.8626e-07 2.46986" />
+      <geometry>
+        <mesh filename="assets/merged/ak80_9gear_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="lr_hfe">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1.32" />
+      <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.003" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="0.101628 -0.0563484 0.206144" rpy="-3.13535 -1.37405 -1.98933" />
+      <geometry>
+        <mesh filename="assets/merged/ak10_9_kv60_v3_0_2_visual.stl" />
+      </geometry>
+      <material name="ak10_9_kv60_v3_0_2_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.101628 -0.0563484 0.206144" rpy="-3.13535 -1.37405 -1.98933" />
+      <geometry>
+        <mesh filename="assets/merged/ak10_9_kv60_v3_0_2_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="lr_kfe">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1.0" />
+      <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.003" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="-0.0137171 0.0729852 -0.155644" rpy="0.00624479 1.37405 1.46573" />
+      <geometry>
+        <mesh filename="assets/merged/ak80_9gear_2_visual.stl" />
+      </geometry>
+      <material name="ak80_9gear_2_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.0137171 0.0729852 -0.155644" rpy="0.00624479 1.37405 1.46573" />
+      <geometry>
+        <mesh filename="assets/merged/ak80_9gear_2_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="lr_ffe">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.61" />
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="0.0835802 -0.207413 0.183144" rpy="-3.13535 -1.37405 -1.00465" />
+      <geometry>
+        <mesh filename="assets/merged/part_1_visual.stl" />
+      </geometry>
+      <material name="part_1_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0835802 -0.207413 0.183144" rpy="-3.13535 -1.37405 -1.00465" />
+      <geometry>
+        <mesh filename="assets/merged/part_1_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="LR_FFE" type="revolute">
+    <origin xyz="0.00371166 -0.149954 0.0275" rpy="-3.14159 -0 0.461079" />
+    <parent link="lr_kfe" />
+    <child link="lr_ffe" />
+    <axis xyz="0 0 1" />
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793" />
+  </joint>
+  
+  <joint name="LR_KFE" type="revolute">
+    <origin xyz="0.15 -0 0.0505" rpy="-3.14159 0 -0.523599" />
+    <parent link="lr_hfe" />
+    <child link="lr_kfe" />
+    <axis xyz="0 0 1" />
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793" />
+  </joint>
+  
+  <joint name="LR_HFE" type="revolute">
+    <origin xyz="0.100046 -0.0514489 -0" rpy="1.5708 1.15226 -2.04578" />
+    <parent link="lr_haa" />
+    <child link="lr_hfe" />
+    <axis xyz="0 0 1" />
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793" />
+  </joint>
+  
+  <joint name="LR_HAA" type="revolute">
+    <origin xyz="-0.0938272 0.115807 0.00759834" rpy="1.57878 -0.671718 3.13663" />
+    <parent link="base" />
+    <child link="lr_haa" />
+    <axis xyz="0 0 1" />
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793" />
+  </joint>
+  
+  <link name="lr_hr">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1.3" />
+      <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.003" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="0.0220561 -0.146975 0.083307" rpy="-3.13535 0.000155672 -2.30937" />
+      <geometry>
+        <mesh filename="assets/merged/ak10_9_kv60_v3_0_3_visual.stl" />
+      </geometry>
+      <material name="ak10_9_kv60_v3_0_3_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0220561 -0.146975 0.083307" rpy="-3.13535 0.000155672 -2.30937" />
+      <geometry>
+        <mesh filename="assets/merged/ak10_9_kv60_v3_0_3_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="ll_hr">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1.3" />
+      <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.003" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="0.15196 0.0719747 -0.083307" rpy="0.00624723 -0.000155672 2.30937" />
+      <geometry>
+        <mesh filename="assets/merged/ak10_9_kv60_v3_0_4_visual.stl" />
+      </geometry>
+      <material name="ak10_9_kv60_v3_0_4_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.15196 0.0719747 -0.083307" rpy="0.00624723 -0.000155672 2.30937" />
+      <geometry>
+        <mesh filename="assets/merged/ak10_9_kv60_v3_0_4_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="ll_haa">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1.02" />
+      <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.003" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="-0.0374362 0.0312059 -0.161139" rpy="1.57704 -0.00658907 -0.523754" />
+      <geometry>
+        <mesh filename="assets/merged/bzd02010008_board_c_ak_drv_12s_v3_00_l__2_visual.stl" />
+      </geometry>
+      <material name="bzd02010008_board_c_ak_drv_12s_v3_00_l__2_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.0374362 0.0312059 -0.161139" rpy="1.57704 -0.00658907 -0.523754" />
+      <geometry>
+        <mesh filename="assets/merged/bzd02010008_board_c_ak_drv_12s_v3_00_l__2_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="ll_hfe">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1.32" />
+      <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.003" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="-0.0721545 0.144082 0.161237" rpy="3.10919 1.40192 0.425784" />
+      <geometry>
+        <mesh filename="assets/merged/ak10_9_kv60_v3_0_5_visual.stl" />
+      </geometry>
+      <material name="ak10_9_kv60_v3_0_5_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.0721545 0.144082 0.161237" rpy="3.10919 1.40192 0.425784" />
+      <geometry>
+        <mesh filename="assets/merged/ak10_9_kv60_v3_0_5_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="ll_kfe">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1.0" />
+      <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.003" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="-0.259249 -0.0538697 -0.110737" rpy="-0.0324075 -1.40192 -0.796275" />
+      <geometry>
+        <mesh filename="assets/merged/bzd02010008_board_c_ak_drv_12s_v3_00_l__2_2_visual.stl" />
+      </geometry>
+      <material name="bzd02010008_board_c_ak_drv_12s_v3_00_l__2_2_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.259249 -0.0538697 -0.110737" rpy="-0.0324075 -1.40192 -0.796275" />
+      <geometry>
+        <mesh filename="assets/merged/bzd02010008_board_c_ak_drv_12s_v3_00_l__2_2_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="ll_ffe">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.61" />
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+    </inertial>
+    
+    <visual>
+      <origin xyz="-0.206253 0.357557 0.138237" rpy="3.10919 1.40192 -0.120426" />
+      <geometry>
+        <mesh filename="assets/merged/part_1_2_visual.stl" />
+      </geometry>
+      <material name="part_1_2_parts_material">
+        <color rgba="nan nan nan nan" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.206253 0.357557 0.138237" rpy="3.10919 1.40192 -0.120426" />
+      <geometry>
+        <mesh filename="assets/merged/part_1_2_collision.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="LL_FFE" type="revolute">
+    <origin xyz="0.15 0 0.0275" rpy="-3.14159 0 -0.916702" />
+    <parent link="ll_kfe" />
+    <child link="ll_ffe" />
+    <axis xyz="0 0 1" />
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793" />
+  </joint>
+  
+  <joint name="LL_KFE" type="revolute">
+    <origin xyz="0.15 0 0.0505" rpy="3.14159 0 -0.370491" />
+    <parent link="ll_hfe" />
+    <child link="ll_kfe" />
+    <axis xyz="0 0 1" />
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793" />
+  </joint>
+  
+  <joint name="LL_HFE" type="revolute">
+    <origin xyz="0.0865857 -0.0718274 0" rpy="-1.5708 -0.464997 0.878293" />
+    <parent link="ll_haa" />
+    <child link="ll_hfe" />
+    <axis xyz="0 0 1" />
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793" />
+  </joint>
+  
+  <joint name="LL_HAA" type="revolute">
+    <origin xyz="-0 0 -0.075" rpy="-1.5708 0.523599 2.30278" />
+    <parent link="ll_hr" />
+    <child link="ll_haa" />
+    <axis xyz="0 0 1" />
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793" />
+  </joint>
+  
+  <joint name="LL_HR" type="revolute">
+    <origin xyz="-0.129904 -0.075 -0" rpy="-3.14159 0 0" />
+    <parent link="lr_hr" />
+    <child link="ll_hr" />
+    <axis xyz="0 0 1" />
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793" />
+  </joint>
+  
+  <joint name="LR_HR" type="revolute">
+    <origin xyz="-0.0938156 0.115776 0.0826" rpy="-3.1375 -0.00472417 -2.30938" />
+    <parent link="base" />
+    <child link="lr_hr" />
+    <axis xyz="0 0 1" />
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793" />
+  </joint>
+</robot>
