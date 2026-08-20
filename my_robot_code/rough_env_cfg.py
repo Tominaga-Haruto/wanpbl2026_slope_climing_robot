@@ -281,6 +281,10 @@ class SkyentificTerminationsCfg:
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
     )
+    bad_orientation = DoneTerm(
+        func=mdp.bad_orientation,
+        params={"limit_angle": 1.3},
+    )
 
 @configclass
 class SkyentificPoclegsRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
