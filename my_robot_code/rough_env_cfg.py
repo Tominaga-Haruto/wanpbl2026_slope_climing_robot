@@ -176,7 +176,7 @@ class SkyentificEventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
+            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-0.5, 0.5)},
             "velocity_range": {
                 "x": (-0.5, 0.5),
                 "y": (-0.5, 0.5),
@@ -211,10 +211,10 @@ class SkyentificRewardsCfg:
 
     # -- task
     track_lin_vel_xy_exp = RewTerm(
-        func=mdp.track_lin_vel_xy_exp, weight=1.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+        func=mdp.track_lin_vel_xy_exp, weight=2.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
     track_ang_vel_z_exp = RewTerm(
-        func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+        func=mdp.track_ang_vel_z_exp, weight=2.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
     # -- penalties
     lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
@@ -223,7 +223,7 @@ class SkyentificRewardsCfg:
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     feet_air_time = RewTerm(
         func=skyentific_mdp.feet_air_time,
-        weight=2.0,
+        weight=1.5,
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ffe"),
             "command_name": "base_velocity",
@@ -233,7 +233,7 @@ class SkyentificRewardsCfg:
     )
     feet_slide = RewTerm(
         func=skyentific_mdp.feet_slide,
-        weight=-0.25,
+        weight=-0.5,
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ffe"),
             "asset_cfg": SceneEntityCfg("robot", body_names=".*ffe"),
@@ -265,11 +265,11 @@ class SkyentificCurriculumCfg:
     terrain_levels = CurrTerm(func=skyentific_mdp.terrain_levels_vel)
     # push force follows curriculum
     push_force_levels = CurrTerm(func=skyentific_mdp.modify_push_force,
-                                 params={"term_name": "push_robot", "max_velocity": [3.0, 3.0], "interval": 200 * 24,
+                                 params={"term_name": "push_robot", "max_velocity": [2.0, 2.0], "interval": 200 * 24,
                                          "starting_step": 1500 * 24})
     # command vel follows curriculum
     command_vel = CurrTerm(func=skyentific_mdp.modify_command_velocity,
-                           params={"term_name": "track_lin_vel_xy_exp", "max_velocity": [-1.5, 3.0],
+                           params={"term_name": "track_lin_vel_xy_exp", "max_velocity": [0.0, 3.0],
                                    "interval": 200 * 24, "starting_step": 5000 * 24})
 
 @configclass
@@ -283,7 +283,7 @@ class SkyentificTerminationsCfg:
     )
     bad_orientation = DoneTerm(
         func=mdp.bad_orientation,
-        params={"limit_angle": 1.3},
+        params={"limit_angle": 0.8},
     )
 
 @configclass
@@ -329,6 +329,11 @@ class SkyentificPoclegsRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         
         self.rewards.flat_orientation_l2.weight = -0.5
         self.rewards.dof_pos_limits.weight = -1.0
+
+        # Problem 1 + 3: Forward-only motion, no crabwalk
+        self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
+        self.commands.base_velocity.ranges.heading = (0.0, 0.0)
+        self.commands.base_velocity.ranges.lin_vel_x = (0.0, 1.0)
 
         self.observations.policy.height_scan = None
 
