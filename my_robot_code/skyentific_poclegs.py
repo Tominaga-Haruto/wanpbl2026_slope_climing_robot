@@ -28,12 +28,12 @@ SKYENTIFIC_POCLEGS_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.449),
+        pos=(0.0, 0.0, 0.375776),
         joint_pos={
             'LL_HR': 0.0,
             'LR_HR': 0.0,
-            'LL_HAA': -0.1745,
-            'LR_HAA': -0.1745,
+            'LL_HAA': 0.0,
+            'LR_HAA': 0.0,
             'LL_HFE': -0.1745,
             'LR_HFE': -0.1745,
             'LL_KFE': 0.3491,
