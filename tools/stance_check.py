@@ -15,6 +15,8 @@ parser.add_argument("--seed", type=int, default=1234)
 parser.add_argument("--hold_s", type=float, default=5.0, help="zero-action hold used for the fall test")
 parser.add_argument("--long_s", type=float, default=10.0, help="total horizon for the survivor pitch")
 parser.add_argument("--out", type=str, default=r"D:\Tominaga\slope-climbing-robot\tools\logs\stance_check.md")
+parser.add_argument("--stiffness_scale", type=float, default=1.0,
+                    help="diagnostic only: multiply every actuator group's stiffness by this")
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 args_cli.headless = True
@@ -89,6 +91,11 @@ def build_env_cfg(num_envs, seed, device, horizon_s):
     bv.resampling_time_range = (1.0e6, 1.0e6)
 
     cfg.episode_length_s = horizon_s + 5.0
+
+    # diagnostic knob only. The training configs are never launched through this script.
+    if args_cli.stiffness_scale != 1.0:
+        for act in cfg.scene.robot.actuators.values():
+            act.stiffness = act.stiffness * args_cli.stiffness_scale
     return cfg
 
 
@@ -166,10 +173,16 @@ def main():
         com_w = (robot.data.body_com_pos_w * masses.unsqueeze(-1)).sum(dim=1) / total_m
         com_b = math_utils.quat_apply_inverse(base_quat, com_w - base_pos)
 
-        emit("# stance_check")
+        emit(f"# stance_check (stiffness x{args_cli.stiffness_scale:g})")
         emit("")
         emit(f"- num_envs {N}, flat ground, all randomisation neutralised, nominal joint pose (scale 1.0)")
         emit(f"- total mass {total_m[0].item():.3f} kg, step_dt {dt}")
+        stiff = {g: float(a.stiffness[0, 0]) if torch.is_tensor(a.stiffness) else float(a.stiffness)
+                 for g, a in robot.actuators.items()}
+        damp = {g: float(a.damping[0, 0]) if torch.is_tensor(a.damping) else float(a.damping)
+                for g, a in robot.actuators.items()}
+        emit(f"- actuator stiffness in effect: {stiff}")
+        emit(f"- actuator damping in effect: {damp}")
         emit("")
         emit("## 1. whole-body COM in base coordinates [m]")
         emit("")
@@ -256,6 +269,8 @@ def main():
         prev_pitch, prev_dx = read_state()
         hold_pitch = prev_pitch.clone()
         hold_dx = prev_dx.clone()
+        n_sag = int(round(0.5 / dt))
+        sag = None
         for k in range(n_long):
             _, _, dones, _, _ = env.step(zero)
             dones = dones.to(torch.bool)
@@ -268,6 +283,10 @@ def main():
             # freeze the reading for envs that have already fallen
             prev_pitch = torch.where(alive, cur_pitch, pitch_at_fall)
             prev_dx = torch.where(alive, cur_dx, dx_at_fall)
+            if k == n_sag - 1:
+                # how far each joint has sagged away from its PD target while holding the pose
+                sag = (robot.data.joint_pos_target - robot.data.joint_pos)[alive].mean(dim=0).clone()
+                sag_n = int(alive.sum().item())
             if k == n_hold - 1:
                 hold_alive = alive.clone()
                 hold_fell = (~alive).clone()
@@ -312,6 +331,28 @@ def main():
         emit(f"| mean pitch at {args_cli.long_s:.0f} s, survivors [deg] | "
              f"{torch.rad2deg(pitch[alive]).mean().item():+.2f} |")
     emit("")
+
+    if sag is not None:
+        emit("## 5. joint sag at 0.5 s of the hold")
+        emit("")
+        emit("target minus actual joint angle [rad], averaged over the left/right pair and over the")
+        emit(f"{sag_n} envs still alive at 0.5 s. A large magnitude means the PD gain is not holding the pose.")
+        emit("")
+        names = list(robot.joint_names)
+        emit("| | HR | HAA | HFE | KFE | FFE |")
+        emit("|---|---|---|---|---|---|")
+        cells = []
+        for p in ("HR", "HAA", "HFE", "KFE", "FFE"):
+            idx = [i for i, n in enumerate(names) if n.endswith("_" + p)]
+            cells.append(f"{sag[idx].mean().item():+.4f}")
+        emit("| target - actual | " + " | ".join(cells) + " |")
+        emit("")
+        emit("per joint:")
+        emit("")
+        emit("| " + " | ".join(names) + " |")
+        emit("|" + "---|" * len(names))
+        emit("| " + " | ".join(f"{v:+.4f}" for v in sag.tolist()) + " |")
+        emit("")
 
     env.close()
     with open(args_cli.out, "w", encoding="utf-8") as f:
