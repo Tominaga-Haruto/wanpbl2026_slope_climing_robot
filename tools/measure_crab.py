@@ -37,6 +37,14 @@ parser.add_argument(
 )
 parser.add_argument("--drop_test", action="store_true", help="run the elevated-spawn drop-test protocol instead of the normal sweep.")
 parser.add_argument("--spawn_height_offset", type=float, default=0.0, help="added to the nominal spawn height [m] (drop test).")
+parser.add_argument(
+    "--basevel_mode", type=str, default=None, choices=["zero", "bias", "noise", "zoh"],
+    help="P5-3: corrupt only the base_lin_vel slice of the policy's observation (physics untouched), "
+    "to probe how much the policy relies on it. Assumes base_lin_vel is obs indices [0:3] (term 0).",
+)
+parser.add_argument("--basevel_bias", type=str, default="0,0,0", help="'x,y,z' m/s added to base_lin_vel (bias mode).")
+parser.add_argument("--basevel_noise_std", type=float, default=0.1, help="gaussian noise std [m/s] (noise mode).")
+parser.add_argument("--basevel_zoh_steps", type=int, default=5, help="zero-order hold period in physics-control steps (zoh mode).")
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 args_cli.headless = True
@@ -188,6 +196,36 @@ def apply_actuator_scale(cfg, scales):
             setattr(act, field, getattr(act, field) * factor)
         applied.append(f"actuators.*.{field} *= {factor}")
     return applied
+
+
+class BaseVelCorruptor:
+    """P5-3: corrupts only the base_lin_vel slice (assumed obs[..., 0:3]) of the policy's TensorDict
+    observation, in place, before it reaches the policy. Physics/other observation terms untouched."""
+
+    def __init__(self, mode, bias, noise_std, zoh_steps, device):
+        self.mode = mode
+        self.bias = torch.as_tensor(bias, dtype=torch.float32, device=device)
+        self.noise_std = noise_std
+        self.zoh_steps = max(1, zoh_steps)
+        self.step_idx = 0
+        self.held = None
+
+    def __call__(self, obs):
+        if self.mode is None:
+            return obs
+        slot = obs["policy"][:, 0:3]
+        if self.mode == "zero":
+            slot.zero_()
+        elif self.mode == "bias":
+            slot += self.bias
+        elif self.mode == "noise":
+            slot += torch.randn_like(slot) * self.noise_std
+        elif self.mode == "zoh":
+            if self.step_idx % self.zoh_steps == 0 or self.held is None:
+                self.held = slot.clone()
+            obs["policy"][:, 0:3] = self.held
+        self.step_idx += 1
+        return obs
 
 
 def bind_fixed_command(term, cmd):
@@ -368,6 +406,11 @@ def main():
     print(f"[measure_crab] effort limit : {limits[0].tolist()}")
     if override_log:
         print(f"[measure_crab] eval-only overrides applied: {override_log}")
+    if args_cli.basevel_mode:
+        print(
+            f"[measure_crab] base_lin_vel corruption: mode={args_cli.basevel_mode} "
+            f"bias={args_cli.basevel_bias} noise_std={args_cli.basevel_noise_std} zoh_steps={args_cli.basevel_zoh_steps}"
+        )
     for gname, act in robot.actuators.items():
         def _s(v):
             return float(v[0, 0].item()) if isinstance(v, torch.Tensor) else float(v)
@@ -398,16 +441,21 @@ def main():
         wanted = set(args_cli.scenarios.split(","))
         scenarios = [s for s in SCENARIOS if s[0] in wanted]
 
+    basevel_bias = tuple(float(x) for x in args_cli.basevel_bias.split(","))
+
     rows = []
     for tag, cvx, cvy, cwz in scenarios:
         cmd = (cvx, cvy, cwz)
+        corrupt = BaseVelCorruptor(
+            args_cli.basevel_mode, basevel_bias, args_cli.basevel_noise_std, args_cli.basevel_zoh_steps, device
+        )
         with torch.inference_mode():
             res = env.reset()
             obs = res[0] if isinstance(res, tuple) else res
             bind_fixed_command(cmd_term, cmd)
 
             for _ in range(n_warm):
-                obs, _, dones, _ = env.step(policy(obs))
+                obs, _, dones, _ = env.step(policy(corrupt(obs)))
                 policy.reset(dones)
             bind_fixed_command(cmd_term, cmd)
 
@@ -443,8 +491,13 @@ def main():
             yaw0 = robot.data.heading_w.clone()
             pos0 = robot.data.root_link_pos_w[:, :2].clone()
 
+            # P5-2: per-joint step-to-step sign-flip rate of joint velocity (numerical-instability probe)
+            sign_flip_cnt_j = torch.zeros(n_j, device=device)
+            sign_flip_total_j = torch.zeros(n_j, device=device)
+            prev_qd_signed = robot.data.joint_vel.clone()
+
             for _ in range(n_meas):
-                obs, _, dones, _ = env.step(policy(obs))
+                obs, _, dones, _ = env.step(policy(corrupt(obs)))
                 policy.reset(dones)
                 m = alive & (~dones.to(torch.bool))
                 mf = m.float()
@@ -474,9 +527,14 @@ def main():
                 land_cnt += fc * mf.unsqueeze(-1)
                 swing_max = swing_max * (sensor.data.current_air_time[:, foot_ids] > 0.0).float()
 
-                qd = robot.data.joint_vel.abs()
+                qd_signed = robot.data.joint_vel
+                qd = qd_signed.abs()
                 if m.any():
                     qd_chunks.append(qd[m].flatten().clone())
+                flipped = (torch.sign(qd_signed) != torch.sign(prev_qd_signed)) & (qd_signed.abs() > 0.01) & (prev_qd_signed.abs() > 0.01)
+                sign_flip_cnt_j += (flipped.float() * mf.unsqueeze(-1)).sum(dim=0)
+                sign_flip_total_j += mf.sum() * torch.ones(n_j, device=device)
+                prev_qd_signed = qd_signed.clone()
                 tau_app_abs = robot.data.applied_torque.abs()
                 tau_cmp_abs = robot.data.computed_torque.abs()
                 sat = (tau_app_abs >= 0.95 * limits).float().mean(dim=1)
@@ -533,9 +591,12 @@ def main():
         tau_app_max_j = tau_app_all.max(dim=0).values
         tau_app_rms_j = torch.sqrt(tau_app_sumsq / tau_app_cnt.clamp(min=1.0))
         tau_cmp_p95_j = torch.quantile(tau_cmp_all.float(), 0.95, dim=0)
+        tau_cmp_p99_j = torch.quantile(tau_cmp_all.float(), 0.99, dim=0)
         tau_cmp_max_j = tau_cmp_all.max(dim=0).values
         sat_frac_j = sat_hit_j / tau_app_cnt.clamp(min=1.0)
         qdj_p95_j = torch.quantile(qdj_all.float(), 0.95, dim=0)
+        qdj_rms_j = torch.sqrt((qdj_all.float() ** 2).mean(dim=0))
+        sign_flip_frac_j = sign_flip_cnt_j / sign_flip_total_j.clamp(min=1.0)
         qdj_max_j = qdj_all.max(dim=0).values
 
         row = {
@@ -549,6 +610,11 @@ def main():
             "vy_mean": avg(vy_m, valid),
             "vy_err_mean": avg(vyerr_m, valid),
             "yawrate_mean": avg(wz_m, valid),
+            # same three, but averaged only over envs that never fell in the 10s window (surv) --
+            # distinguishes real locomotion from tumbling-induced velocity spikes in fallen envs.
+            "vx_mean_surv": avg(vx_m, surv),
+            "vy_mean_surv": avg(vy_m, surv),
+            "yawrate_mean_surv": avg(wz_m, surv),
             "heading_drift_deg": avg(head_drift, surv),
             "travel_dir_deg": avg(travel, surv) if tag in ("S1", "S2") else float("nan"),
             "stationary_rate": stationary if tag in ("S1", "S2", "S4", "S5") else float("nan"),
@@ -567,10 +633,13 @@ def main():
             row[f"tau_app_max_{jn}"] = float(tau_app_max_j[j].item())
             row[f"tau_app_rms_{jn}"] = float(tau_app_rms_j[j].item())
             row[f"tau_cmp_p95_{jn}"] = float(tau_cmp_p95_j[j].item())
+            row[f"tau_cmp_p99_{jn}"] = float(tau_cmp_p99_j[j].item())
             row[f"tau_cmp_max_{jn}"] = float(tau_cmp_max_j[j].item())
             row[f"sat_frac_{jn}"] = float(sat_frac_j[j].item())
             row[f"qd_p95_{jn}"] = float(qdj_p95_j[j].item())
             row[f"qd_max_{jn}"] = float(qdj_max_j[j].item())
+            row[f"qd_rms_{jn}"] = float(qdj_rms_j[j].item())
+            row[f"sign_flip_frac_{jn}"] = float(sign_flip_frac_j[j].item())
 
         rows.append(row)
         print(

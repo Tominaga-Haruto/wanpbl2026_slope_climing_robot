@@ -197,6 +197,21 @@ class SkyentificEventCfg:
         },
     )
 
+    # H_gainDR (2026-09-17): actuator gain randomization, disabled by default (range 1.0-1.0 = no-op).
+    # Enabled only via Hydra override at launch time (stiffness/damping distribution params), so the
+    # default training behaviour of every other run is unchanged.
+    randomize_actuator_gains = EventTerm(
+        func=mdp.randomize_actuator_gains,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "stiffness_distribution_params": (1.0, 1.0),
+            "damping_distribution_params": (1.0, 1.0),
+            "operation": "scale",
+            "distribution": "uniform",
+        },
+    )
+
     # interval
     push_robot = EventTerm(
         func=mdp.push_by_setting_velocity,
