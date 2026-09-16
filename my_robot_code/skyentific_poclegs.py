@@ -44,7 +44,7 @@ SKYENTIFIC_POCLEGS_CFG = ArticulationCfg(
     ),
     actuators={
         # AK10-9. effort_limit=53.0 N*m is the datasheet peak (MIT torque limit is 54 N*m).
-        # armature/friction are provisional, unmeasured values per the 2026-09-16 operator instructions.
+        # armature/friction are provisional, unmeasured values (actuator_params.md sec.3, Cowork project doc, outside this repo).
         "hr": DelayedPDActuatorCfg(
             joint_names_expr=[".*HR"],
             effort_limit=53.0,
@@ -57,7 +57,7 @@ SKYENTIFIC_POCLEGS_CFG = ArticulationCfg(
             max_delay=4,  # physics time steps (max: 2.0*4=8.0ms)
         ),
         # AK10-9. effort_limit=53.0 N*m is the datasheet peak (MIT torque limit is 54 N*m).
-        # armature/friction are provisional, unmeasured values per the 2026-09-16 operator instructions.
+        # armature/friction are provisional, unmeasured values (actuator_params.md sec.3, Cowork project doc, outside this repo).
         "haa": DelayedPDActuatorCfg(
             joint_names_expr=[".*HAA"],
             effort_limit=53.0,
@@ -71,7 +71,7 @@ SKYENTIFIC_POCLEGS_CFG = ArticulationCfg(
         ),
         # AK80-9. effort_limit=18.0 N*m is the MIT torque limit (datasheet peak is 22 N*m).
         # split out of the old combined HFE+KFE group; stiffness/velocity_limit kept at that group's value.
-        # armature/friction are provisional, unmeasured values per the 2026-09-16 operator instructions.
+        # armature/friction are provisional, unmeasured values (actuator_params.md sec.3, Cowork project doc, outside this repo).
         "hfe": DelayedPDActuatorCfg(
             joint_names_expr=[".*HFE"],
             effort_limit=18.0,
@@ -85,7 +85,7 @@ SKYENTIFIC_POCLEGS_CFG = ArticulationCfg(
         ),
         # AK10-9. effort_limit=53.0 N*m is the datasheet peak (MIT torque limit is 54 N*m).
         # split out of the old combined HFE+KFE group; stiffness/velocity_limit kept at that group's value.
-        # armature/friction are provisional, unmeasured values per the 2026-09-16 operator instructions.
+        # armature/friction are provisional, unmeasured values (actuator_params.md sec.3, Cowork project doc, outside this repo).
         "kfe": DelayedPDActuatorCfg(
             joint_names_expr=[".*KFE"],
             effort_limit=53.0,
@@ -98,7 +98,7 @@ SKYENTIFIC_POCLEGS_CFG = ArticulationCfg(
             max_delay=4,  # physics time steps (max: 2.0*4=8.0ms)
         ),
         # AK80-9. effort_limit=18.0 N*m is the MIT torque limit (datasheet peak is 22 N*m).
-        # armature/friction are provisional, unmeasured values per the 2026-09-16 operator instructions.
+        # armature/friction are provisional, unmeasured values (actuator_params.md sec.3, Cowork project doc, outside this repo).
         "ffe": DelayedPDActuatorCfg(
             joint_names_expr=[".*FFE"],
             effort_limit=18.0,

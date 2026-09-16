@@ -10,7 +10,10 @@ $tag = "$Run" + "_" + ($Ckpt -replace "[^0-9]", "")
 $out = "D:\Tominaga\slope-climbing-robot\tools\logs\measure_$tag.txt"
 $err = "D:\Tominaga\slope-climbing-robot\tools\logs\measure_$tag.err.txt"
 
-# _preload_h5py_and_run.py: preload h5py before Kit starts, see _launch.ps1 for why (2026-09-16).
+# conda activation + h5py preload: see _launch.ps1 for why (2026-09-16, h5py-vs-isaacsim.sensors.rtx
+# DLL race).
+& "C:\Users\WRS\miniconda3\shell\condabin\conda-hook.ps1" | Out-Null
+conda activate "D:\Tominaga\envs\isaac_env"
 $p = Start-Process -FilePath "D:\Tominaga\envs\isaac_env\python.exe" -ArgumentList @(
     "-u", "D:\Tominaga\slope-climbing-robot\tools\runs\_preload_h5py_and_run.py",
     "D:\Tominaga\slope-climbing-robot\tools\measure_crab.py",

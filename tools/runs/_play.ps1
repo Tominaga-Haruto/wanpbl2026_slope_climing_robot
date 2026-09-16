@@ -18,6 +18,11 @@ param(
 
 $env:OMNI_KIT_ACCEPT_EULA = "YES"
 
+# conda activation + h5py preload: see _launch.ps1 for why (2026-09-16, h5py-vs-isaacsim.sensors.rtx
+# DLL race).
+& "C:\Users\WRS\miniconda3\shell\condabin\conda-hook.ps1" | Out-Null
+conda activate "D:\Tominaga\envs\isaac_env"
+
 $py   = "D:\Tominaga\envs\isaac_env\python.exe"
 $pre  = "D:\Tominaga\slope-climbing-robot\tools\runs\_preload_h5py_and_run.py"
 $play = "D:\Tominaga\IsaacLab\scripts\reinforcement_learning\rsl_rl\play.py"
