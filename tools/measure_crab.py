@@ -34,6 +34,7 @@ import math
 import os
 
 import torch
+import yaml
 from rsl_rl.runners import OnPolicyRunner
 
 import isaaclab.utils.math as math_utils
@@ -146,6 +147,29 @@ def wrap_pi(x):
     return torch.atan2(torch.sin(x), torch.cos(x))
 
 
+def apply_trained_actuator_params(env_cfg, run_dir):
+    """Hydra overrides (e.g. G_real_rated's effort_limit=18/9) only ever touched the live cfg object
+    at training time -- they are not baked into skyentific_poclegs.py, so a fresh env_cfg built here
+    would silently evaluate under the wrong (code-default/peak) actuator limits. Read the actual
+    values the run trained with back out of its own params/env.yaml and re-apply them."""
+    env_yaml = os.path.join(run_dir, "params", "env.yaml")
+    if not os.path.isfile(env_yaml):
+        print(f"[measure_crab] WARNING: no {env_yaml}, using code-default actuator params")
+        return
+    with open(env_yaml, "r", encoding="utf-8") as f:
+        saved = yaml.unsafe_load(f)
+    saved_actuators = saved.get("scene", {}).get("robot", {}).get("actuators", {})
+    fields = ("effort_limit", "velocity_limit", "stiffness", "damping", "armature", "friction")
+    for name, act in env_cfg.scene.robot.actuators.items():
+        sa = saved_actuators.get(name)
+        if sa is None:
+            print(f"[measure_crab] WARNING: actuator group '{name}' not found in {env_yaml}")
+            continue
+        for field in fields:
+            if field in sa and sa[field] is not None:
+                setattr(act, field, sa[field])
+
+
 def main():
     device = args_cli.device if args_cli.device is not None else "cuda:0"
     env_cfg = build_env_cfg(args_cli.num_envs, args_cli.seed, device)
@@ -160,6 +184,8 @@ def main():
     resume_path = os.path.join(run_dir, args_cli.checkpoint)
     if not os.path.isfile(resume_path):
         raise FileNotFoundError(f"checkpoint not found: {resume_path}")
+
+    apply_trained_actuator_params(env_cfg, run_dir)
 
     env = ManagerBasedRLEnv(cfg=env_cfg)
     env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
