@@ -18,6 +18,25 @@ parser.add_argument("--seed", type=int, default=1234)
 parser.add_argument("--experiment", type=str, default="skyentific_poclegs_rough")
 parser.add_argument("--log_root", type=str, default=r"D:\Tominaga\IsaacLab\logs\rsl_rl")
 parser.add_argument("--out_dir", type=str, default=r"D:\Tominaga\slope-climbing-robot\tools\logs")
+parser.add_argument("--tag", type=str, default="", help="extra label appended to output file names")
+parser.add_argument(
+    "--override", action="append", default=[],
+    help="eval-only env cfg override 'dotted.path=value' (repeatable), applied AFTER the trained "
+    "run's own actuator params are re-applied. value is parsed as int/float/bool/tuple(comma-sep)/str.",
+)
+parser.add_argument(
+    "--actuator_scale", action="append", default=[],
+    help="'field=factor' (repeatable): multiply every actuator group's given field (e.g. stiffness, "
+    "damping, friction) by factor.",
+)
+parser.add_argument("--delay_fixed", type=int, default=None, help="set min_delay=max_delay=N on every actuator group.")
+parser.add_argument("--obs_noise", action="store_true", help="keep observation corruption on (default: off for eval).")
+parser.add_argument(
+    "--scenarios", type=str, default=None,
+    help="comma-separated subset of scenario tags to run, e.g. 'S1,S3,S7,S8' (default: all).",
+)
+parser.add_argument("--drop_test", action="store_true", help="run the elevated-spawn drop-test protocol instead of the normal sweep.")
+parser.add_argument("--spawn_height_offset", type=float, default=0.0, help="added to the nominal spawn height [m] (drop test).")
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 args_cli.headless = True
@@ -125,6 +144,52 @@ def build_env_cfg(num_envs: int, seed: int, device: str) -> SkyentificPoclegsRou
     return cfg
 
 
+def _parse_override_value(s):
+    if "," in s:
+        return tuple(_parse_override_value(x) for x in s.split(","))
+    for conv in (int, float):
+        try:
+            return conv(s)
+        except ValueError:
+            pass
+    if s.lower() in ("true", "false"):
+        return s.lower() == "true"
+    if s.lower() in ("null", "none"):
+        return None
+    return s
+
+
+def apply_generic_overrides(cfg, overrides):
+    """Apply 'dotted.path=value' overrides, walking both object attributes and dict keys."""
+    applied = []
+    for ov in overrides:
+        path, value_s = ov.split("=", 1)
+        value = _parse_override_value(value_s)
+        parts = path.split(".")
+        obj = cfg
+        for p in parts[:-1]:
+            obj = obj[p] if isinstance(obj, dict) else getattr(obj, p)
+        last = parts[-1]
+        if isinstance(obj, dict):
+            obj[last] = value
+        else:
+            setattr(obj, last, value)
+        applied.append(f"{path}={value}")
+    return applied
+
+
+def apply_actuator_scale(cfg, scales):
+    """Apply 'field=factor' overrides, multiplying every actuator group's given field."""
+    applied = []
+    for sc in scales:
+        field, factor_s = sc.split("=", 1)
+        factor = float(factor_s)
+        for act in cfg.scene.robot.actuators.values():
+            setattr(act, field, getattr(act, field) * factor)
+        applied.append(f"actuators.*.{field} *= {factor}")
+    return applied
+
+
 def bind_fixed_command(term, cmd):
     """Force the velocity command term to always emit ``cmd``."""
 
@@ -170,6 +235,62 @@ def apply_trained_actuator_params(env_cfg, run_dir):
                 setattr(act, field, sa[field])
 
 
+def run_drop_test(env, policy, cmd_term, robot, device, N, dt):
+    """Elevated-spawn drop test: S3 (zero) command from t=0 under the real spawn_height_offset,
+    fall rate during the first 2s (the drop/landing itself), then fall rate + horizontal drift
+    for survivors over the following 10s."""
+    with torch.inference_mode():
+        res = env.reset()
+        obs = res[0] if isinstance(res, tuple) else res
+        bind_fixed_command(cmd_term, (0.0, 0.0, 0.0))
+
+        n_drop = int(round(2.0 / dt))
+        n_post = int(round(10.0 / dt))
+
+        alive = torch.ones(N, dtype=torch.bool, device=device)
+        for _ in range(n_drop):
+            obs, _, dones, _ = env.step(policy(obs))
+            policy.reset(dones)
+            alive &= ~dones.to(torch.bool)
+        drop_fall_rate = float((~alive).float().mean().item())
+
+        post_start_pos = robot.data.root_link_pos_w[:, :2].clone()
+        post_alive = alive.clone()
+        for _ in range(n_post):
+            obs, _, dones, _ = env.step(policy(obs))
+            policy.reset(dones)
+            post_alive &= ~dones.to(torch.bool)
+        end_pos = robot.data.root_link_pos_w[:, :2].clone()
+        drift = (end_pos - post_start_pos).norm(dim=1)
+
+        n_drop_survivors = int(alive.sum().item())
+        newly_fell = alive & (~post_alive)
+        post_fall_rate = float(newly_fell.float().sum().item() / max(n_drop_survivors, 1))
+        survived_both = alive & post_alive
+        n_survived_both = int(survived_both.sum().item())
+        mean_drift = float(drift[survived_both].mean().item()) if n_survived_both else float("nan")
+
+    print("=" * 78)
+    print(f"[measure_crab drop_test] N={N} drop_fall_rate(0-2s)={drop_fall_rate:.4f}")
+    print(f"[measure_crab drop_test] drop survivors={n_drop_survivors}/{N}")
+    print(f"[measure_crab drop_test] post_fall_rate(2-12s, of drop survivors)={post_fall_rate:.4f}")
+    print(f"[measure_crab drop_test] mean horizontal drift (2-12s survivors) [m]={mean_drift:.4f} (n={n_survived_both})")
+    print("=" * 78)
+
+    it = "".join(ch for ch in args_cli.checkpoint if ch.isdigit()) or "unknown"
+    suffix = f"_{args_cli.tag}" if args_cli.tag else ""
+    out = os.path.join(args_cli.out_dir, f"drop_test_{args_cli.load_run}_{it}{suffix}.md")
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(f"# drop test: {args_cli.load_run} @ {args_cli.checkpoint}\n\n")
+        f.write(f"- num_envs={N}, spawn_height_offset={args_cli.spawn_height_offset}m, command=S3(0,0,0)\n\n")
+        f.write("| quantity | value |\n|---|---|\n")
+        f.write(f"| fall rate, first 2s (drop/landing) | {drop_fall_rate:.4f} |\n")
+        f.write(f"| drop survivors | {n_drop_survivors}/{N} |\n")
+        f.write(f"| fall rate, next 10s (of drop survivors) | {post_fall_rate:.4f} |\n")
+        f.write(f"| mean horizontal drift, next 10s [m] (survivors of both windows, n={n_survived_both}) | {mean_drift:.4f} |\n")
+    print(f"[measure_crab drop_test] wrote {out}")
+
+
 def main():
     device = args_cli.device if args_cli.device is not None else "cuda:0"
     env_cfg = build_env_cfg(args_cli.num_envs, args_cli.seed, device)
@@ -186,6 +307,24 @@ def main():
         raise FileNotFoundError(f"checkpoint not found: {resume_path}")
 
     apply_trained_actuator_params(env_cfg, run_dir)
+
+    override_log = []
+    override_log += apply_actuator_scale(env_cfg, args_cli.actuator_scale)
+    if args_cli.delay_fixed is not None:
+        for act in env_cfg.scene.robot.actuators.values():
+            act.min_delay = args_cli.delay_fixed
+            act.max_delay = args_cli.delay_fixed
+        override_log.append(f"delay_fixed={args_cli.delay_fixed}")
+    override_log += apply_generic_overrides(env_cfg, args_cli.override)
+    if args_cli.obs_noise:
+        env_cfg.observations.policy.enable_corruption = True
+        override_log.append("observations.policy.enable_corruption=True")
+    if args_cli.spawn_height_offset:
+        z = env_cfg.scene.robot.init_state.pos[2] + args_cli.spawn_height_offset
+        env_cfg.scene.robot.init_state.pos = (
+            env_cfg.scene.robot.init_state.pos[0], env_cfg.scene.robot.init_state.pos[1], z,
+        )
+        override_log.append(f"scene.robot.init_state.pos.z={z} (+{args_cli.spawn_height_offset})")
 
     env = ManagerBasedRLEnv(cfg=env_cfg)
     env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
@@ -227,6 +366,17 @@ def main():
     print(f"[measure_crab] body order   : {list(robot.body_names)}")
     print(f"[measure_crab] foot bodies  : {foot_names} ids={foot_ids}")
     print(f"[measure_crab] effort limit : {limits[0].tolist()}")
+    if override_log:
+        print(f"[measure_crab] eval-only overrides applied: {override_log}")
+    for gname, act in robot.actuators.items():
+        def _s(v):
+            return float(v[0, 0].item()) if isinstance(v, torch.Tensor) else float(v)
+        print(
+            f"[measure_crab] actuator '{gname}' effective: effort_limit={_s(act.effort_limit)} "
+            f"velocity_limit={_s(act.velocity_limit)} stiffness={_s(act.stiffness)} "
+            f"damping={_s(act.damping)} friction={_s(act.friction)} "
+            f"min_delay={act.cfg.min_delay} max_delay={act.cfg.max_delay}"
+        )
 
     # whole-body COM in base frame at the default pose (P1-13)
     masses = robot.data.default_mass.to(device)
@@ -238,8 +388,18 @@ def main():
     print(f"[measure_crab] COM in base  : {com_b[0].tolist()}")
     print("=" * 78)
 
+    if args_cli.drop_test:
+        run_drop_test(env, policy, cmd_term, robot, device, N, dt)
+        env.close()
+        return
+
+    scenarios = SCENARIOS
+    if args_cli.scenarios:
+        wanted = set(args_cli.scenarios.split(","))
+        scenarios = [s for s in SCENARIOS if s[0] in wanted]
+
     rows = []
-    for tag, cvx, cvy, cwz in SCENARIOS:
+    for tag, cvx, cvy, cwz in scenarios:
         cmd = (cvx, cvy, cwz)
         with torch.inference_mode():
             res = env.reset()
@@ -426,7 +586,8 @@ def main():
 def write_outputs(rows, foot_names):
     it = "".join(ch for ch in args_cli.checkpoint if ch.isdigit()) or "unknown"
     os.makedirs(args_cli.out_dir, exist_ok=True)
-    base = os.path.join(args_cli.out_dir, f"eval_{args_cli.load_run}_{it}")
+    suffix = f"_{args_cli.tag}" if args_cli.tag else ""
+    base = os.path.join(args_cli.out_dir, f"eval_{args_cli.load_run}_{it}{suffix}")
 
     fields = list(rows[0].keys())
     with open(base + ".csv", "w", newline="", encoding="utf-8") as f:
