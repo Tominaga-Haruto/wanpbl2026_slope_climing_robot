@@ -231,6 +231,16 @@ class SkyentificRewardsCfg:
             "threshold_max": 0.5,
         },
     )
+    feet_air_time_biped = RewTerm(
+        func=skyentific_mdp.feet_air_time_positive_biped,
+        weight=0.0,
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ffe"),
+            "command_name": "base_velocity",
+            "threshold_min": 0.0,
+            "threshold_max": 0.4,
+        },
+    )
     feet_slide = RewTerm(
         func=skyentific_mdp.feet_slide,
         weight=-0.25,
