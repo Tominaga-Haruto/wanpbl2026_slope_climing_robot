@@ -63,6 +63,9 @@ SCENARIOS = [
     ("S4", -0.3, 0.0, 0.0),
     ("S5", 0.0, 0.3, 0.0),
     ("S6", 0.0, 0.0, 0.5),
+    ("S7", 0.5, 0.0, 0.3),
+    ("S8", 0.5, 0.0, -0.3),
+    ("S9", 0.0, 0.0, -0.5),
 ]
 
 
@@ -236,6 +239,14 @@ def main():
             air_cnt = torch.zeros(N, len(foot_ids), device=device)
             sat_hit = torch.zeros(N, device=device)
             qd_chunks = []
+            # per-joint (all 10 joints, in robot.joint_names order): applied/computed torque, joint speed
+            n_j = robot.num_joints
+            tau_app_sumsq = torch.zeros(n_j, device=device)
+            tau_app_cnt = torch.zeros(n_j, device=device)
+            sat_hit_j = torch.zeros(n_j, device=device)
+            tau_app_chunks = []
+            tau_cmp_chunks = []
+            qdj_chunks = []
             # swing apex: running max of foot height while airborne, banked at each touch-down
             swing_max = torch.zeros(N, len(foot_ids), device=device)
             apex_sum = torch.zeros(N, len(foot_ids), device=device)
@@ -280,8 +291,18 @@ def main():
                 qd = robot.data.joint_vel.abs()
                 if m.any():
                     qd_chunks.append(qd[m].flatten().clone())
-                sat = (robot.data.applied_torque.abs() >= 0.95 * limits).float().mean(dim=1)
+                tau_app_abs = robot.data.applied_torque.abs()
+                tau_cmp_abs = robot.data.computed_torque.abs()
+                sat = (tau_app_abs >= 0.95 * limits).float().mean(dim=1)
                 sat_hit += sat * mf
+
+                if m.any():
+                    tau_app_chunks.append(tau_app_abs[m].clone())
+                    tau_cmp_chunks.append(tau_cmp_abs[m].clone())
+                    qdj_chunks.append(qd[m].clone())
+                tau_app_sumsq += (tau_app_abs**2 * mf.unsqueeze(-1)).sum(dim=0)
+                tau_app_cnt += mf.sum()
+                sat_hit_j += ((tau_app_abs >= 0.95 * limits).float() * mf.unsqueeze(-1)).sum(dim=0)
 
                 ever_done |= dones.to(torch.bool)
                 alive &= ~dones.to(torch.bool)
@@ -318,6 +339,19 @@ def main():
         qd_all = torch.cat(qd_chunks) if qd_chunks else torch.zeros(1, device=device)
         qd_p95 = float(torch.quantile(qd_all.float(), 0.95).item())
 
+        # per-joint (all 10 joints): applied/computed torque, joint speed
+        tau_app_all = torch.cat(tau_app_chunks) if tau_app_chunks else torch.zeros(1, n_j, device=device)
+        tau_cmp_all = torch.cat(tau_cmp_chunks) if tau_cmp_chunks else torch.zeros(1, n_j, device=device)
+        qdj_all = torch.cat(qdj_chunks) if qdj_chunks else torch.zeros(1, n_j, device=device)
+        tau_app_p95_j = torch.quantile(tau_app_all.float(), 0.95, dim=0)
+        tau_app_max_j = tau_app_all.max(dim=0).values
+        tau_app_rms_j = torch.sqrt(tau_app_sumsq / tau_app_cnt.clamp(min=1.0))
+        tau_cmp_p95_j = torch.quantile(tau_cmp_all.float(), 0.95, dim=0)
+        tau_cmp_max_j = tau_cmp_all.max(dim=0).values
+        sat_frac_j = sat_hit_j / tau_app_cnt.clamp(min=1.0)
+        qdj_p95_j = torch.quantile(qdj_all.float(), 0.95, dim=0)
+        qdj_max_j = qdj_all.max(dim=0).values
+
         row = {
             "scenario": tag,
             "cmd_vx": cvx, "cmd_vy": cvy, "cmd_wz": cwz,
@@ -342,6 +376,15 @@ def main():
             row[f"air_time_{fname}"] = avg(air_mean[:, k], air_valid[:, k] & valid)
             row[f"swing_apex_cm_{fname}"] = avg(apex_mean[:, k], apex_valid[:, k] & valid)
         row["landings_per_s"] = avg(land_rate, valid)
+        for j, jn in enumerate(joint_names):
+            row[f"tau_app_p95_{jn}"] = float(tau_app_p95_j[j].item())
+            row[f"tau_app_max_{jn}"] = float(tau_app_max_j[j].item())
+            row[f"tau_app_rms_{jn}"] = float(tau_app_rms_j[j].item())
+            row[f"tau_cmp_p95_{jn}"] = float(tau_cmp_p95_j[j].item())
+            row[f"tau_cmp_max_{jn}"] = float(tau_cmp_max_j[j].item())
+            row[f"sat_frac_{jn}"] = float(sat_frac_j[j].item())
+            row[f"qd_p95_{jn}"] = float(qdj_p95_j[j].item())
+            row[f"qd_max_{jn}"] = float(qdj_max_j[j].item())
 
         rows.append(row)
         print(

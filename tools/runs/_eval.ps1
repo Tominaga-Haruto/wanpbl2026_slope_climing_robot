@@ -10,8 +10,10 @@ $tag = "$Run" + "_" + ($Ckpt -replace "[^0-9]", "")
 $out = "D:\Tominaga\slope-climbing-robot\tools\logs\measure_$tag.txt"
 $err = "D:\Tominaga\slope-climbing-robot\tools\logs\measure_$tag.err.txt"
 
+# _preload_h5py_and_run.py: preload h5py before Kit starts, see _launch.ps1 for why (2026-09-16).
 $p = Start-Process -FilePath "D:\Tominaga\envs\isaac_env\python.exe" -ArgumentList @(
-    "-u", "D:\Tominaga\slope-climbing-robot\tools\measure_crab.py",
+    "-u", "D:\Tominaga\slope-climbing-robot\tools\runs\_preload_h5py_and_run.py",
+    "D:\Tominaga\slope-climbing-robot\tools\measure_crab.py",
     "--load_run", $Run, "--checkpoint", $Ckpt, "--num_envs", "$NumEnvs"
 ) -WorkingDirectory "D:\Tominaga\IsaacLab" -NoNewWindow -PassThru `
   -RedirectStandardOutput $out -RedirectStandardError $err

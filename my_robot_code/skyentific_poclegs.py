@@ -43,47 +43,70 @@ SKYENTIFIC_POCLEGS_CFG = ArticulationCfg(
         },
     ),
     actuators={
+        # AK10-9. effort_limit=53.0 N*m is the datasheet peak (MIT torque limit is 54 N*m).
+        # armature/friction are provisional, unmeasured values per the 2026-09-16 operator instructions.
         "hr": DelayedPDActuatorCfg(
             joint_names_expr=[".*HR"],
-            effort_limit=24.0,
+            effort_limit=53.0,
             velocity_limit=23.0,
             stiffness=10.0,
             damping=1.5,
-            armature=6.9e-5 * 81,
-            friction=0.02,
+            armature=8.116e-3,
+            friction=0.37,
             min_delay=0,  # physics time steps (min: 2.0*0=0.0ms)
             max_delay=4,  # physics time steps (max: 2.0*4=8.0ms)
         ),
+        # AK10-9. effort_limit=53.0 N*m is the datasheet peak (MIT torque limit is 54 N*m).
+        # armature/friction are provisional, unmeasured values per the 2026-09-16 operator instructions.
         "haa": DelayedPDActuatorCfg(
             joint_names_expr=[".*HAA"],
-            effort_limit=30.0,
+            effort_limit=53.0,
             velocity_limit=15.0,
             stiffness=15.0,
             damping=1.5,
-            armature=9.4e-5 * 81,
-            friction=0.02,
+            armature=8.116e-3,
+            friction=0.37,
             min_delay=0,  # physics time steps (min: 2.0*0=0.0ms)
             max_delay=4,  # physics time steps (max: 2.0*4=8.0ms)
         ),
-        "kfe": DelayedPDActuatorCfg(
-            joint_names_expr=[".*HFE", ".*KFE"],
-            effort_limit=30.0,
+        # AK80-9. effort_limit=18.0 N*m is the MIT torque limit (datasheet peak is 22 N*m).
+        # split out of the old combined HFE+KFE group; stiffness/velocity_limit kept at that group's value.
+        # armature/friction are provisional, unmeasured values per the 2026-09-16 operator instructions.
+        "hfe": DelayedPDActuatorCfg(
+            joint_names_expr=[".*HFE"],
+            effort_limit=18.0,
             velocity_limit=20.0,
             stiffness=15.0,
             damping=1.5,
-            armature=1.5e-4 * 81,
-            friction=0.02,
+            armature=9.77e-3,
+            friction=0.22,
             min_delay=0,  # physics time steps (min: 2.0*0=0.0ms)
             max_delay=4,  # physics time steps (max: 2.0*4=8.0ms)
         ),
+        # AK10-9. effort_limit=53.0 N*m is the datasheet peak (MIT torque limit is 54 N*m).
+        # split out of the old combined HFE+KFE group; stiffness/velocity_limit kept at that group's value.
+        # armature/friction are provisional, unmeasured values per the 2026-09-16 operator instructions.
+        "kfe": DelayedPDActuatorCfg(
+            joint_names_expr=[".*KFE"],
+            effort_limit=53.0,
+            velocity_limit=20.0,
+            stiffness=15.0,
+            damping=1.5,
+            armature=8.116e-3,
+            friction=0.37,
+            min_delay=0,  # physics time steps (min: 2.0*0=0.0ms)
+            max_delay=4,  # physics time steps (max: 2.0*4=8.0ms)
+        ),
+        # AK80-9. effort_limit=18.0 N*m is the MIT torque limit (datasheet peak is 22 N*m).
+        # armature/friction are provisional, unmeasured values per the 2026-09-16 operator instructions.
         "ffe": DelayedPDActuatorCfg(
             joint_names_expr=[".*FFE"],
-            effort_limit=20.0,
+            effort_limit=18.0,
             velocity_limit=23.0,
             stiffness=10.0,
             damping=1.5,
-            armature=6.9e-5 * 81,
-            friction=0.02,
+            armature=9.77e-3,
+            friction=0.22,
             min_delay=0,  # physics time steps (min: 2.0*0=0.0ms)
             max_delay=4,  # physics time steps (max: 2.0*4=8.0ms)
         ),

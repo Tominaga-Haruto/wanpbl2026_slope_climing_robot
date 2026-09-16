@@ -19,6 +19,7 @@ param(
 $env:OMNI_KIT_ACCEPT_EULA = "YES"
 
 $py   = "D:\Tominaga\envs\isaac_env\python.exe"
+$pre  = "D:\Tominaga\slope-climbing-robot\tools\runs\_preload_h5py_and_run.py"
 $play = "D:\Tominaga\IsaacLab\scripts\reinforcement_learning\rsl_rl\play.py"
 $ckpt = Join-Path "D:\Tominaga\IsaacLab\logs\rsl_rl\skyentific_poclegs_rough\$Run" $Ckpt
 
@@ -26,7 +27,11 @@ if (-not (Test-Path $ckpt)) { Write-Error "checkpoint not found: $ckpt"; exit 1 
 
 # 学習時は agent.policy.noise_std_type=log で回したので、ここでも同じにしないと
 # 分布パラメータの名前が変わってチェックポイントの読み込みに失敗する。
+# $pre で play.py をラップして h5py を Kit 起動前に先読みする。しないと
+# "ImportError: DLL load failed while importing _errors" で落ちる（2026-09-16 判明、
+# 特に --video で再現しやすい）。
 $a = @(
+    $pre,
     $play,
     "--task", "Velocity-Rough-Skyentific-Poclegs-Play-v0",
     "--num_envs", "$NumEnvs",
