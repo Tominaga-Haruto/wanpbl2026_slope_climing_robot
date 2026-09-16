@@ -26,7 +26,7 @@ $allArgs = @(
     "--load_run", $Run, "--checkpoint", $Ckpt, "--num_envs", "$NumEnvs"
 )
 if ($Tag) { $allArgs += @("--tag", $Tag) }
-$allArgs += $ExtraArgs
+if ($ExtraArgs) { $allArgs += $ExtraArgs }
 $p = Start-Process -FilePath "D:\Tominaga\envs\isaac_env\python.exe" -ArgumentList $allArgs `
   -WorkingDirectory "D:\Tominaga\IsaacLab" -NoNewWindow -PassThru `
   -RedirectStandardOutput $out -RedirectStandardError $err
