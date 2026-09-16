@@ -9,6 +9,9 @@ observation vectors; does not touch the training run's checkpoint/config.
 import argparse
 import sys
 
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # import onnx (and its protobuf runtime) before Kit ever starts -- otherwise Kit's own bundled
 # protobuf appears to get grabbed first and onnx's import crashes with a native access violation.
 # Same class of "whoever initializes shared native state first wins" issue as the h5py DLL race
@@ -107,6 +110,18 @@ def apply_trained_actuator_params(env_cfg, run_dir):
                 setattr(act, field, sa[field])
 
 
+def apply_trained_obs_overrides(env_cfg, run_dir):
+    """H_nolinvel's checkpoint expects base_lin_vel dropped; detect and reapply from env.yaml."""
+    env_yaml = os.path.join(run_dir, "params", "env.yaml")
+    if not os.path.isfile(env_yaml):
+        return
+    with open(env_yaml, "r", encoding="utf-8") as f:
+        saved = yaml.unsafe_load(f)
+    saved_obs = saved.get("observations", {}).get("policy", {})
+    if saved_obs.get("base_lin_vel") is None:
+        env_cfg.observations.policy.base_lin_vel = None
+
+
 def main():
     device = args_cli.device if args_cli.device is not None else "cuda:0"
 
@@ -126,6 +141,7 @@ def main():
     run_dir = os.path.join(args_cli.log_root, args_cli.experiment, args_cli.load_run)
     resume_path = os.path.join(run_dir, args_cli.checkpoint)
     apply_trained_actuator_params(env_cfg, run_dir)
+    apply_trained_obs_overrides(env_cfg, run_dir)
 
     env = ManagerBasedRLEnv(cfg=env_cfg)
     env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
