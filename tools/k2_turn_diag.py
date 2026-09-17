@@ -1,15 +1,20 @@
-"""T0-3: what is the policy actually doing during S6 (pure in-place turn), compared to S1/S3.
-One checkpoint per invocation (--load_run/--checkpoint), S6/S1/S3.
+"""K2 (exp07): what is the policy actually doing during in-place turning (S6/S9), compared to
+straight walking (S1) and standing (S3)? One checkpoint per invocation (--load_run/--checkpoint),
+single env per process (see t0_3_s6_diag.py's K1 note -- this script is that one's structure with
+S9 added and fall-rate/contact-point-count/foot-slide-speed reporting).
 
-Reports: foot contact rate, air time per step, steps per 10s, HR joint angle stats, HR torque
-stats, per-step reward term averages (weight included), and foot yaw slip during contact.
+Reports per scenario: base yaw-rate mean, |(vx,vy)| mean, fall rate; per-foot contact rate, air
+time per step, steps/10s; HR joint angle mean/range/|.|p95, HR computed-torque p95, HR torque
+saturation fraction; stance-foot yaw slip (world yaw angular velocity mean/p95) and stance-foot
+horizontal linear speed (world, mean); per-step reward term averages (weight included).
 
-K1 (2026-09-17, exp07): originally looped over 2 checkpoints (G_real_peak, H_eff13p5) inside one
-process, each via its own ManagerBasedRLEnv create/close. That reliably hung on the SECOND env's
-construction -- confirmed by tools/k1_bisect.py stage2 (bare create-close-create-close hangs the
-same way) and stage8 (this script's real single-run loop, 3 scenarios/~1800 steps, completes fine
-in one env). Split to one checkpoint per process; run it twice (see run_t0_3_both.ps1) to get both
-tables. See docs/experiments/exp07_*.md for the full writeup.
+NOT measured (flagged, not guessed): stance-foot contact-POINT count and x/y footprint spread in
+foot-link coordinates. IsaacLab's ContactSensorData only exposes `contact_pos_w`, the AVERAGE
+contact position per sensor-filter body pair (requires track_contact_points=True +
+filter_prim_paths_expr + max_contact_data_per_prim on the sensor cfg) -- there is no per-point
+list at this level, so "how many contact points, how spread out" is not obtainable without a
+lower-level PhysX contact-report call this script does not implement. Left out per project rule
+("don't guess -- stop and report"); see docs/experiments/exp07_*.md.
 """
 
 import argparse
@@ -29,7 +34,7 @@ parser.add_argument("--seed", type=int, default=1234)
 parser.add_argument("--noise_std_type", type=str, default="log", choices=["scalar", "log"])
 parser.add_argument("--log_root", type=str, default=r"D:\Tominaga\IsaacLab\logs\rsl_rl")
 parser.add_argument("--experiment", type=str, default="skyentific_poclegs_rough")
-parser.add_argument("--out", type=str, default=r"D:\Tominaga\slope-climbing-robot\tools\logs\T0_3_s6_diag.md")
+parser.add_argument("--out", type=str, default=r"D:\Tominaga\slope-climbing-robot\tools\logs\K2_turn_diag.md")
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 args_cli.headless = True
@@ -62,7 +67,7 @@ INSTALLED_VERSION = metadata.version("rsl-rl-lib")
 STEP_DT = 0.02
 FOOT_BODIES = ("ll_ffe", "lr_ffe")
 HR_JOINTS = ("LL_HR", "LR_HR")
-SCENARIOS = [("S1", 0.5, 0.0, 0.0), ("S3", 0.0, 0.0, 0.0), ("S6", 0.0, 0.0, 0.5)]
+SCENARIOS = [("S1", 0.5, 0.0, 0.0), ("S3", 0.0, 0.0, 0.0), ("S6", 0.0, 0.0, 0.5), ("S9", 0.0, 0.0, -0.5)]
 
 
 def build_env_cfg(num_envs, seed, device):
@@ -174,9 +179,11 @@ def run_one(load_run, checkpoint, device):
             cmd_term.is_standing_env[:] = False
             n_warm = 100
             n_meas = 500
+            ever_done = torch.zeros(args_cli.num_envs, dtype=torch.bool, device=device)
             for _ in range(n_warm):
                 obs, _, dones, _ = envw.step(policy(obs))
                 policy.reset(dones)
+                ever_done |= dones.to(torch.bool)
                 cmd_term.vel_command_b[:, 0] = vx
                 cmd_term.vel_command_b[:, 1] = vy
                 cmd_term.vel_command_b[:, 2] = wz
@@ -187,12 +194,16 @@ def run_one(load_run, checkpoint, device):
             contact_hist = []
             reward_hist = []
             foot_yaw_vel_hist = []
+            foot_horiz_speed_hist = []
+            yaw_rate_hist = []
+            xy_speed_hist = []
             landings = torch.zeros(args_cli.num_envs, device=device)
             air_time_sum = torch.zeros(args_cli.num_envs, device=device)
 
             for _ in range(n_meas):
                 obs, _, dones, _ = envw.step(policy(obs))
                 policy.reset(dones)
+                ever_done |= dones.to(torch.bool)
                 cmd_term.vel_command_b[:, 0] = vx
                 cmd_term.vel_command_b[:, 1] = vy
                 cmd_term.vel_command_b[:, 2] = wz
@@ -203,7 +214,8 @@ def run_one(load_run, checkpoint, device):
                 sat_hist.append((robot.data.computed_torque[:, hr_ids].abs() >= effort - 1e-3).float())
 
                 forces = contact_sensor.data.net_forces_w[:, sensor_body_ids, :].norm(dim=-1)
-                contact_hist.append((forces > 1.0).float())
+                in_contact = forces > 1.0
+                contact_hist.append(in_contact.float())
 
                 first_contact = contact_sensor.compute_first_contact(env.step_dt)[:, sensor_body_ids]
                 last_air = contact_sensor.data.last_air_time[:, sensor_body_ids]
@@ -213,8 +225,12 @@ def run_one(load_run, checkpoint, device):
                 reward_hist.append(reward_mgr._step_reward.clone())
 
                 foot_ang_vel = robot.data.body_ang_vel_w[:, foot_body_ids, 2]  # yaw component
-                in_contact = forces > 1.0
                 foot_yaw_vel_hist.append(torch.where(in_contact, foot_ang_vel.abs(), torch.full_like(foot_ang_vel, float("nan"))))
+                foot_horiz = robot.data.body_lin_vel_w[:, foot_body_ids, :2].norm(dim=-1)
+                foot_horiz_speed_hist.append(torch.where(in_contact, foot_horiz, torch.full_like(foot_horiz, float("nan"))))
+
+                yaw_rate_hist.append(robot.data.root_ang_vel_b[:, 2].clone())
+                xy_speed_hist.append(robot.data.root_lin_vel_b[:, :2].norm(dim=-1).clone())
 
             hr_pos = torch.stack(hr_pos_hist)  # (T, N, 2)
             hr_tau = torch.stack(hr_tau_hist)
@@ -222,13 +238,19 @@ def run_one(load_run, checkpoint, device):
             contact = torch.stack(contact_hist)  # (T, N, 2)
             reward_all = torch.stack(reward_hist)  # (T, N, n_terms)
             foot_yaw = torch.stack(foot_yaw_vel_hist)
+            foot_horiz_speed = torch.stack(foot_horiz_speed_hist)
+            yaw_rate = torch.stack(yaw_rate_hist)  # (T, N)
+            xy_speed = torch.stack(xy_speed_hist)  # (T, N)
 
             n_landings_total = float(landings.sum().item())
             mean_air_time_per_step = float((air_time_sum.sum() / max(n_landings_total, 1)).item())
-            steps_per_10s = float(landings.mean().item())  # landings per env over the 10s window
+            steps_per_10s = float(landings.mean().item())
 
             results[tag] = {
-                "contact_rate": contact.mean(dim=(0, 1)).cpu().tolist(),  # per-foot
+                "yaw_rate_mean": float(yaw_rate.mean().item()),
+                "xy_speed_mean": float(xy_speed.mean().item()),
+                "fall_rate": float(ever_done.float().mean().item()),
+                "contact_rate": contact.mean(dim=(0, 1)).cpu().tolist(),
                 "air_time_per_step": mean_air_time_per_step,
                 "steps_per_10s": steps_per_10s,
                 "hr_pos_mean": hr_pos.mean(dim=(0, 1)).cpu().tolist(),
@@ -239,6 +261,7 @@ def run_one(load_run, checkpoint, device):
                 "reward_terms": {name: float(reward_all[:, :, i].mean().item()) for i, name in enumerate(term_names)},
                 "foot_yaw_slip_mean": float(torch.nanmean(foot_yaw).item()),
                 "foot_yaw_slip_p95": float(torch.nanquantile(foot_yaw[~torch.isnan(foot_yaw)], 0.95).item()) if (~torch.isnan(foot_yaw)).any() else float("nan"),
+                "foot_horiz_speed_mean": float(torch.nanmean(foot_horiz_speed).item()) if (~torch.isnan(foot_horiz_speed)).any() else float("nan"),
             }
 
     env.close()
@@ -254,14 +277,21 @@ def main():
         print(s)
         lines.append(s)
 
-    emit(f"# T0-3: S6での挙動診断 ({name} @ {args_cli.checkpoint}, {args_cli.num_envs}env, S1/S3/S6)\n")
+    emit(f"# K2: その場旋回診断 ({name} @ {args_cli.checkpoint}, {args_cli.num_envs}env, S1/S3/S6/S9)\n")
 
     print(f"=== running {name} ===")
     results, term_names = run_one(args_cli.load_run, args_cli.checkpoint, device)
 
-    emit(f"\n## {name}\n")
-    emit("| scenario | 接地率(LL/LR) | 歩あたり滞空[s] | 歩数/10s | HR平均角(LL/LR) | HR範囲(LL/LR) | HR\\|角\\|p95(LL/LR) | HR tau p95(LL/LR) | HR飽和率(LL/LR) | 足yaw滑りmean/p95[rad/s] |")
-    emit("|---|---|---|---|---|---|---|---|---|---|")
+    emit(f"\n## {name}: 胴体・転倒\n")
+    emit("| scenario | yaw rate平均[rad/s] | \\|(vx,vy)\\|平均[m/s] | 転倒率 |")
+    emit("|---|---|---|---|")
+    for tag, *_ in SCENARIOS:
+        r = results[tag]
+        emit(f"| {tag} | {r['yaw_rate_mean']:+.4f} | {r['xy_speed_mean']:.4f} | {r['fall_rate']:.4f} |")
+
+    emit(f"\n## {name}: 足・HR\n")
+    emit("| scenario | 接地率(LL/LR) | 歩あたり滞空[s] | 歩数/10s | HR平均角(LL/LR) | HR範囲(LL/LR) | HR\\|角\\|p95(LL/LR) | HR tau p95(LL/LR) | HR飽和率(LL/LR) |")
+    emit("|---|---|---|---|---|---|---|---|---|")
     for tag, *_ in SCENARIOS:
         r = results[tag]
         emit(f"| {tag} | {r['contact_rate'][0]:.3f}/{r['contact_rate'][1]:.3f} | "
@@ -270,19 +300,27 @@ def main():
              f"[{r['hr_pos_range'][0][0]:+.3f},{r['hr_pos_range'][1][0]:+.3f}]/[{r['hr_pos_range'][0][1]:+.3f},{r['hr_pos_range'][1][1]:+.3f}] | "
              f"{r['hr_pos_absp95'][0]:.4f}/{r['hr_pos_absp95'][1]:.4f} | "
              f"{r['hr_tau_p95'][0]:.3f}/{r['hr_tau_p95'][1]:.3f} | "
-             f"{r['hr_sat_frac'][0]:.4f}/{r['hr_sat_frac'][1]:.4f} | "
-             f"{r['foot_yaw_slip_mean']:.4f}/{r['foot_yaw_slip_p95']:.4f} |")
+             f"{r['hr_sat_frac'][0]:.4f}/{r['hr_sat_frac'][1]:.4f} |")
 
-    emit(f"\n### {name}: 報酬項ごとの1step平均(weight込み)\n")
-    emit("| term | S1 | S3 | S6 |")
-    emit("|---|---|---|---|")
+    emit(f"\n## {name}: 立脚足の滑り(接地中のみ)\n")
+    emit("| scenario | 足yaw角速度 mean/p95[rad/s] | 足水平速度 mean[m/s] |")
+    emit("|---|---|---|")
+    for tag, *_ in SCENARIOS:
+        r = results[tag]
+        emit(f"| {tag} | {r['foot_yaw_slip_mean']:.4f}/{r['foot_yaw_slip_p95']:.4f} | {r['foot_horiz_speed_mean']:.4f} |")
+
+    emit(f"\n## {name}: 報酬項ごとの1step平均(weight込み)\n")
+    emit("| term | S1 | S3 | S6 | S9 |")
+    emit("|---|---|---|---|---|")
     for term in term_names:
         vals = [results[tag]["reward_terms"][term] for tag, *_ in SCENARIOS]
-        emit(f"| {term} | {vals[0]:+.5f} | {vals[1]:+.5f} | {vals[2]:+.5f} |")
+        emit(f"| {term} | {vals[0]:+.5f} | {vals[1]:+.5f} | {vals[2]:+.5f} | {vals[3]:+.5f} |")
+
+    emit("\n(接触点数・x/y方向の広がりは未測定 -- モジュールdocstring参照)")
 
     with open(args_cli.out, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
-    print(f"[t0_3] wrote {args_cli.out}")
+    print(f"[k2_turn_diag] wrote {args_cli.out}")
 
 
 if __name__ == "__main__":

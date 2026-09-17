@@ -12,6 +12,15 @@
    default gains, does it stand for 2s (32 env, fall rate)? cfg is untouched; only the live
    default_joint_pos data buffer is patched inside this script (same technique already used by
    reset_robot_joints.params["position_range"]=(1.0,1.0) elsewhere in this project).
+
+K1 (2026-09-17, exp07): originally ran Part1/Part2(x2 runs)/Part3 as 4 ManagerBasedRLEnv
+create/close cycles inside one process. That reliably hung -- confirmed by
+tools/k1_bisect.py stage2 (bare create-close-create-close hangs the same way) while stage6/9/10
+(pxr mesh traversal, p6_1's own event-cfg overrides, and its exact default_joint_pos-mutation
+calibration loop, each run standalone in ONE env) all completed fine. Split into one env per
+process via --part {1,2,3} (Part2 additionally needs --run_name); Part1 writes a small JSON
+sidecar (--calib_json) with the FFE calibration that Part2/Part3 read back. Run all three (Part2
+twice, once per --run_name) via run_p6_1_all.ps1. See docs/experiments/exp07_*.md.
 """
 
 import argparse
@@ -23,7 +32,14 @@ sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 from isaaclab.app import AppLauncher
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--load_run", type=str, default="2026-09-16_17-28-46_G_real_peak")
+parser.add_argument("--part", type=str, required=True, choices=["1", "2", "3"])
+parser.add_argument("--run_name", type=str, default=None, choices=["G_real_peak", "H_eff13p5"],
+                     help="required for --part 2: which of the two comparison runs to measure")
+parser.add_argument("--calib_json", type=str,
+                     default=r"D:\Tominaga\slope-climbing-robot\tools\logs\P6_1_calib.json",
+                     help="Part1 writes FFE calibration here; Part2/Part3 read it back")
+parser.add_argument("--load_run", type=str, default="2026-09-16_17-28-46_G_real_peak",
+                     help="used by Part1 (calibration env's actuator params) and Part3 (hold-test env)")
 parser.add_argument("--checkpoint", type=str, default="model_2999.pt")
 parser.add_argument("--seed", type=int, default=1234)
 parser.add_argument("--experiment", type=str, default="skyentific_poclegs_rough")
@@ -42,6 +58,7 @@ simulation_app = app_launcher.app
 
 # ---------------------------------------------------------------------------
 import os  # noqa: E402
+import json  # noqa: E402
 import importlib.metadata as metadata  # noqa: E402
 
 import numpy as np  # noqa: E402
@@ -199,7 +216,6 @@ def measure_sole_pitch(env, robot, stage, body_idx, mesh_pts_local, device):
 def main():
     device = args_cli.device if args_cli.device is not None else "cuda:0"
     run_dir = os.path.join(args_cli.log_root, args_cli.experiment, args_cli.load_run)
-    resume_path = os.path.join(run_dir, args_cli.checkpoint)
 
     lines = []
 
@@ -207,16 +223,39 @@ def main():
         print(s)
         lines.append(s)
 
-    emit(f"# P6-1: foot-sole pitch and stance posture -- {args_cli.load_run} @ {args_cli.checkpoint}\n")
+    if args_cli.part == "1":
+        run_part1(device, run_dir, emit)
+    elif args_cli.part == "2":
+        if args_cli.run_name is None:
+            raise SystemExit("--part 2 requires --run_name {G_real_peak,H_eff13p5}")
+        with open(args_cli.calib_json, "r", encoding="utf-8") as f:
+            calib = json.load(f)["calib"]
+        part2_runs = {
+            "G_real_peak": ("2026-09-16_17-28-46_G_real_peak", "model_2999.pt"),
+            "H_eff13p5": ("2026-09-17_00-08-51_H_eff13p5", "model_2999.pt"),
+        }
+        part2_run, part2_ckpt = part2_runs[args_cli.run_name]
+        emit(f"# P6-1 Part2: {args_cli.run_name} @ {part2_ckpt}\n")
+        run_part2(args_cli.run_name, part2_run, part2_ckpt, device, calib, emit)
+    elif args_cli.part == "3":
+        with open(args_cli.calib_json, "r", encoding="utf-8") as f:
+            correction = json.load(f)["correction"]
+        emit(f"# P6-1 Part3: hold-pose test -- {args_cli.load_run} @ {args_cli.checkpoint}\n")
+        run_part3(device, run_dir, correction, emit)
 
-    # ==== Part 1: calibrate FFE-angle -> sole-pitch mapping at the default pose ====
+    with open(args_cli.out, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+    print(f"[p6_1_footpitch] wrote {args_cli.out}")
+
+
+def run_part1(device, run_dir, emit):
+    """Part 1: calibrate FFE-angle -> sole-pitch mapping at the default pose. Single env, closed
+    before this process exits; writes --calib_json for Part2/Part3 (see K1 note in the module
+    docstring -- running Part1/2/3 as 3 envs in one process is what used to hang)."""
+    emit(f"# P6-1 Part1: FFE calibration -- {args_cli.load_run} @ {args_cli.checkpoint}\n")
+
     env_cfg = build_env_cfg(args_cli.num_envs_calib, args_cli.seed, device)
     apply_trained_actuator_params(env_cfg, run_dir)
-    agent_cfg = SkyentificPoclegsRoughPPORunnerCfg()
-    agent_cfg.seed = args_cli.seed
-    agent_cfg.device = device
-    apply_trained_noise_std_type(agent_cfg, run_dir)
-    agent_cfg = handle_deprecated_rsl_rl_cfg(agent_cfg, INSTALLED_VERSION)
 
     env = ManagerBasedRLEnv(cfg=env_cfg)
     robot = env.scene["robot"]
@@ -270,15 +309,16 @@ def main():
     correction = {FOOT_BODIES[i]: calib[FOOT_BODIES[i]]["theta_zero"] for i in range(2)}
     env.close()
 
-    # ==== Part 2: S3(2-10s) and S1 stance-phase pitch/FFE, for both G_real_peak and H_eff13p5 ====
-    part2_runs = {
-        "G_real_peak": ("2026-09-16_17-28-46_G_real_peak", "model_2999.pt"),
-        "H_eff13p5": ("2026-09-17_00-08-51_H_eff13p5", "model_2999.pt"),
-    }
-    for part2_name, (part2_run, part2_ckpt) in part2_runs.items():
-        run_part2(part2_name, part2_run, part2_ckpt, device, calib, emit)
+    with open(args_cli.calib_json, "w", encoding="utf-8") as f:
+        json.dump({"calib": calib, "correction": correction}, f, indent=2)
+    emit(f"\n(calibration written to {args_cli.calib_json} for --part 2/3)")
 
-    # ==== Part 3: hold-pose stability test (action=0, corrected FFE default) ====
+
+def run_part3(device, run_dir, correction, emit):
+    """Part 3: hold-pose stability test (action=0, corrected FFE default). Single env; reads
+    `correction` (theta_zero per foot body) from Part1's --calib_json instead of Part1's own
+    default_ffe/env, since a fresh env's default_joint_pos is the same value (set by cfg, not by
+    actuator params) -- read back locally below instead of importing it from Part1's process."""
     env_cfg3 = build_env_cfg(args_cli.num_envs_stance, args_cli.seed, device)
     apply_trained_actuator_params(env_cfg3, run_dir)
     env3 = ManagerBasedRLEnv(cfg=env_cfg3)
@@ -288,7 +328,8 @@ def main():
 
     with torch.inference_mode():
         for i, jn in enumerate(FFE_JOINTS):
-            robot3.data.default_joint_pos[:, ffe_ids3[i]] = float(default_ffe[i]) + correction[FOOT_BODIES[i]]
+            base_val = float(robot3.data.default_joint_pos[0, ffe_ids3[i]])
+            robot3.data.default_joint_pos[:, ffe_ids3[i]] = base_val + correction[FOOT_BODIES[i]]
         env3.reset()
         zero_action = torch.zeros((args_cli.num_envs_stance, n_joints), device=device)
         ever_done = torch.zeros(args_cli.num_envs_stance, dtype=torch.bool, device=device)
@@ -303,10 +344,6 @@ def main():
          f"action=0固定(目標角=その姿勢), gainは既定\n")
     emit(f"- 転倒率(2秒以内): {fall_rate:.4f}")
     env3.close()
-
-    with open(args_cli.out, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
-    print(f"[p6_1_footpitch] wrote {args_cli.out}")
 
 
 def run_part2(name, load_run, checkpoint, device, calib, emit):
