@@ -273,6 +273,30 @@ def apply_trained_actuator_params(env_cfg, run_dir):
                 setattr(act, field, sa[field])
 
 
+def apply_trained_noise_std_type(agent_cfg, run_dir):
+    """The actor's distribution std parameterization (noise_std_type: 'log' vs 'scalar') must match
+    what the run actually trained with, or state_dict loading fails with a log_std_param/std_param
+    key mismatch. Read the actually-used value back out of the run's own params/agent.yaml instead of
+    relying on the launch line / CLI default (2026-09-17: H_gainDR was accidentally launched without
+    the agent.policy.noise_std_type=log override every other run in this project used, defaulting to
+    rsl-rl's own 'scalar' default -- isaaclab_rl/rsl_rl/rl_cfg.py:81)."""
+    agent_yaml = os.path.join(run_dir, "params", "agent.yaml")
+    if not os.path.isfile(agent_yaml):
+        print(f"[measure_crab] WARNING: no {agent_yaml}, using CLI default noise_std_type={agent_cfg.policy.noise_std_type}")
+        return
+    with open(agent_yaml, "r", encoding="utf-8") as f:
+        saved = yaml.unsafe_load(f)
+    std_type = (saved.get("actor") or {}).get("distribution_cfg", {}).get("std_type")
+    if std_type is None:
+        print(f"[measure_crab] WARNING: no actor.distribution_cfg.std_type in {agent_yaml}, "
+              f"using CLI default noise_std_type={agent_cfg.policy.noise_std_type}")
+        return
+    if std_type != agent_cfg.policy.noise_std_type:
+        print(f"[measure_crab] noise_std_type: run trained with '{std_type}' "
+              f"(CLI/default was '{agent_cfg.policy.noise_std_type}') -- using '{std_type}'")
+    agent_cfg.policy.noise_std_type = std_type
+
+
 def run_drop_test(env, policy, cmd_term, robot, device, N, dt):
     """Elevated-spawn drop test: S3 (zero) command from t=0 under the real spawn_height_offset,
     fall rate during the first 2s (the drop/landing itself), then fall rate + horizontal drift
@@ -333,16 +357,17 @@ def main():
     device = args_cli.device if args_cli.device is not None else "cuda:0"
     env_cfg = build_env_cfg(args_cli.num_envs, args_cli.seed, device)
 
-    agent_cfg = SkyentificPoclegsRoughPPORunnerCfg()
-    agent_cfg.seed = args_cli.seed
-    agent_cfg.device = device
-    agent_cfg.policy.noise_std_type = args_cli.noise_std_type
-    agent_cfg = handle_deprecated_rsl_rl_cfg(agent_cfg, INSTALLED_VERSION)
-
     run_dir = os.path.join(args_cli.log_root, args_cli.experiment, args_cli.load_run)
     resume_path = os.path.join(run_dir, args_cli.checkpoint)
     if not os.path.isfile(resume_path):
         raise FileNotFoundError(f"checkpoint not found: {resume_path}")
+
+    agent_cfg = SkyentificPoclegsRoughPPORunnerCfg()
+    agent_cfg.seed = args_cli.seed
+    agent_cfg.device = device
+    agent_cfg.policy.noise_std_type = args_cli.noise_std_type
+    apply_trained_noise_std_type(agent_cfg, run_dir)
+    agent_cfg = handle_deprecated_rsl_rl_cfg(agent_cfg, INSTALLED_VERSION)
 
     apply_trained_actuator_params(env_cfg, run_dir)
 

@@ -1,4 +1,4 @@
-# Generic launcher: .\_launch.ps1 -RunName <name> -ExtraArgs @(...)
+﻿# Generic launcher: .\_launch.ps1 -RunName <name> -ExtraArgs @(...)
 param(
     [Parameter(Mandatory = $true)][string]$RunName,
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$ExtraArgs
@@ -20,6 +20,19 @@ $trn  = "D:\Tominaga\IsaacLab\scripts\reinforcement_learning\rsl_rl\train.py"
 $wd   = "D:\Tominaga\IsaacLab"
 $out  = "D:\Tominaga\slope-climbing-robot\tools\logs\run_$RunName.txt"
 $err  = "D:\Tominaga\slope-climbing-robot\tools\logs\run_$RunName.err.txt"
+
+# 2026-09-17: H_gainDRの起動でagent.policy.noise_std_type=logのオーバーライドを入れ忘れ、
+# rsl-rl既定の'scalar'のまま学習してしまう事故があった。以後、起動行にこのオーバーライドが
+# 全く含まれていない場合は警告して起動を止める(既定の挙動=このプロジェクトの全runがlogで
+# 揃っている、を変えない)。明示的に...noise_std_type=scalarと指定した場合はそのまま通す。
+$noiseStdTypeArg = $ExtraArgs | Where-Object { $_ -match "^agent\.policy\.noise_std_type=" }
+if (-not $noiseStdTypeArg) {
+    Write-Error "agent.policy.noise_std_type=<log|scalar> がExtraArgsに見つかりません。このプロジェクトの" `
+        "他の全runはnoise_std_type=logで学習されています。意図してscalar(rsl-rl既定)を使う場合も" `
+        "明示的に 'agent.policy.noise_std_type=scalar' を渡してください。起動を中止します。"
+    exit 1
+}
+Write-Output "noise_std_type override confirmed: $noiseStdTypeArg"
 
 # $pre wraps $trn to preload h5py before Kit starts (see _preload_h5py_and_run.py). Belt-and-
 # suspenders alongside the conda activation above: train.py crashes with "ImportError: DLL load

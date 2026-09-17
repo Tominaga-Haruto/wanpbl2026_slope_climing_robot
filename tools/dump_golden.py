@@ -120,18 +120,34 @@ def apply_trained_obs_overrides(env_cfg, run_dir):
         env_cfg.observations.policy.base_lin_vel = None
 
 
+def apply_trained_noise_std_type(agent_cfg, run_dir):
+    """Read the actor's actually-trained distribution std parameterization ('log' vs 'scalar') back
+    out of params/agent.yaml instead of trusting the launch line / CLI default (see measure_crab.py's
+    same-named helper for the H_gainDR incident this guards against)."""
+    agent_yaml = os.path.join(run_dir, "params", "agent.yaml")
+    if not os.path.isfile(agent_yaml):
+        return
+    with open(agent_yaml, "r", encoding="utf-8") as f:
+        saved = yaml.unsafe_load(f)
+    std_type = (saved.get("actor") or {}).get("distribution_cfg", {}).get("std_type")
+    if std_type is not None:
+        agent_cfg.policy.noise_std_type = std_type
+
+
 def main():
     device = args_cli.device if args_cli.device is not None else "cuda:0"
     env_cfg = build_env_cfg(args_cli.seed, device)
+
+    run_dir = os.path.join(args_cli.log_root, args_cli.experiment, args_cli.load_run)
+    resume_path = os.path.join(run_dir, args_cli.checkpoint)
 
     agent_cfg = SkyentificPoclegsRoughPPORunnerCfg()
     agent_cfg.seed = args_cli.seed
     agent_cfg.device = device
     agent_cfg.policy.noise_std_type = args_cli.noise_std_type
+    apply_trained_noise_std_type(agent_cfg, run_dir)
     agent_cfg = handle_deprecated_rsl_rl_cfg(agent_cfg, INSTALLED_VERSION)
 
-    run_dir = os.path.join(args_cli.log_root, args_cli.experiment, args_cli.load_run)
-    resume_path = os.path.join(run_dir, args_cli.checkpoint)
     apply_trained_actuator_params(env_cfg, run_dir)
     apply_trained_obs_overrides(env_cfg, run_dir)
 
