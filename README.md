@@ -83,6 +83,7 @@ slope-climbing-robot/
 | `experiments/exp01_ablation_iter1000.md` | 実験01 の追加切り分け（iter 1000 時点）。**結論は後に撤回された** |
 | `experiments/exp02_stop1.md` | 実験02 停止点1。C_flatonly の 2400 で結論が変わった回 |
 | `experiments/exp02_stop2.md` | 実験02 停止点2。E_yawcmd と F_BtoRough |
+| `experiments/exp06_turn_in_place.md` | 実験06。その場旋回(S6/S9)修正の全経緯と**失敗判定**。D1〜D3(実験04/05)もここに格納 |
 
 ## 6. `chats/` — チャットごとの作業記録
 
@@ -92,6 +93,7 @@ slope-climbing-robot/
 | ファイル | 内容 |
 |---|---|
 | `2026-09-16_exp01_exp02.md` | 実験01（立ち往生・カニ歩きの切り分け）と実験02（切り分けの仕上げ・seed 再現・旋回） |
+| `2026-09-17_exp05_exp06.md` | 実験05（デプロイ準備・その場旋回の原因診断）と実験06（対策と評価。**失敗判定**） |
 
 ## 7. `onshape_export/` — CAD から機体まで
 
