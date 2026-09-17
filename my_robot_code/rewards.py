@@ -16,7 +16,8 @@ if TYPE_CHECKING:
 
 
 def feet_air_time(
-    env: ManagerBasedRLEnv, command_name: str, sensor_cfg: SceneEntityCfg, threshold_min: float, threshold_max: float
+    env: ManagerBasedRLEnv, command_name: str, sensor_cfg: SceneEntityCfg, threshold_min: float, threshold_max: float,
+    yaw_gate: bool = False,
 ) -> torch.Tensor:
     """Reward long steps taken by the feet using L2-kernel.
 
@@ -25,6 +26,12 @@ def feet_air_time(
     the time for which the feet are in the air.
 
     If the commands are small (i.e. the agent is not supposed to take a step), then the reward is zero.
+
+    yaw_gate: if False (default, unchanged behaviour), the reward is zeroed whenever the commanded
+    linear velocity magnitude |(vx,vy)| <= 0.1, regardless of the commanded yaw rate -- so a pure
+    turn-in-place command (vx=vy=0, wz large) always gets zero reward here even if the robot steps
+    properly. If True, the gate instead opens when EITHER |(vx,vy)| > 0.1 OR |wz| > 0.1, so turn-in-
+    place commands can also earn this reward (2026-09-17, exp06 J0-1).
     """
     # extract the used quantities (to enable type-hinting)
     contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
@@ -37,18 +44,24 @@ def feet_air_time(
     air_time = torch.clamp(air_time, max=threshold_max - threshold_min)
     reward = torch.sum(air_time, dim=1)
     # no reward for zero command
-    reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
+    command = env.command_manager.get_command(command_name)
+    if yaw_gate:
+        reward *= (torch.norm(command[:, :2], dim=1) > 0.1) | (command[:, 2].abs() > 0.1)
+    else:
+        reward *= torch.norm(command[:, :2], dim=1) > 0.1
     return reward
 
 
 def feet_air_time_positive_biped(env, command_name: str, threshold_min: float, threshold_max: float,
-                                 sensor_cfg: SceneEntityCfg) -> torch.Tensor:
+                                 sensor_cfg: SceneEntityCfg, yaw_gate: bool = False) -> torch.Tensor:
     """Reward long steps taken by the feet for bipeds.
 
     This function rewards the agent for taking steps up to a specified threshold and also keep one foot at
     a time in the air.
 
     If the commands are small (i.e. the agent is not supposed to take a step), then the reward is zero.
+
+    yaw_gate: see feet_air_time's docstring -- same semantics (2026-09-17, exp06 J0-1).
     """
     contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
     # compute the reward
@@ -62,7 +75,11 @@ def feet_air_time_positive_biped(env, command_name: str, threshold_min: float, t
     # no reward for small steps
     reward *= reward > threshold_min
     # no reward for zero command
-    reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
+    command = env.command_manager.get_command(command_name)
+    if yaw_gate:
+        reward *= (torch.norm(command[:, :2], dim=1) > 0.1) | (command[:, 2].abs() > 0.1)
+    else:
+        reward *= torch.norm(command[:, :2], dim=1) > 0.1
     return reward
 
 

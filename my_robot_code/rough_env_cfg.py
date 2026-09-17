@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import math
 
+import torch
+
 import isaaclab.sim as sim_utils
 from isaaclab.utils import configclass
 
@@ -75,6 +77,70 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
         ),
     },
 )
+
+
+class TurnAwareVelocityCommand(mdp.UniformVelocityCommand):
+    """UniformVelocityCommand extended with optional turn-in-place / translate-only env carve-outs
+    (2026-09-17, exp06 J0-2). With the cfg's three new fields left at their defaults (0.0), this is
+    byte-identical in behaviour to UniformVelocityCommand -- no envs are ever selected for either
+    carve-out, so _resample_command falls through to exactly the parent's sampling.
+
+    Carve-outs are applied strictly after the parent's own uniform sampling, per env_ids, so they only
+    ever narrow the already-sampled population for that resample event -- they do not change the
+    resampling cadence or which env_ids get resampled when.
+
+    Note: no `cfg: TurnAwareVelocityCommandCfg` type annotation here (unlike the base class) --
+    this file has no `from __future__ import annotations`, so a bare forward-reference annotation to
+    a class defined later in this same file would raise NameError at class-body execution time.
+    """
+
+    def _resample_command(self, env_ids):
+        super()._resample_command(env_ids)
+        env_ids_t = env_ids if isinstance(env_ids, torch.Tensor) else torch.as_tensor(env_ids, device=self.device)
+        n = env_ids_t.numel()
+        if n == 0:
+            return
+        r = torch.empty(n, device=self.device)
+
+        # -- turn-in-place envs: vx=vy=0, wz=+-U(turn_in_place_wz_range), never heading/standing so
+        #    _update_command (heading recompute / standing zero-out) never overwrites this wz.
+        is_turn = r.uniform_(0.0, 1.0) <= self.cfg.rel_turn_in_place_envs
+        turn_ids = env_ids_t[is_turn]
+        if turn_ids.numel() > 0:
+            n_turn = turn_ids.numel()
+            mag = torch.empty(n_turn, device=self.device).uniform_(*self.cfg.turn_in_place_wz_range)
+            sign = torch.where(
+                torch.empty(n_turn, device=self.device).uniform_(0.0, 1.0) <= 0.5,
+                torch.ones(n_turn, device=self.device),
+                -torch.ones(n_turn, device=self.device),
+            )
+            self.vel_command_b[turn_ids, 0] = 0.0
+            self.vel_command_b[turn_ids, 1] = 0.0
+            self.vel_command_b[turn_ids, 2] = mag * sign
+            self.is_heading_env[turn_ids] = False
+            self.is_standing_env[turn_ids] = False
+
+        # -- translate-only envs: drawn from the envs NOT already chosen as turn-in-place, wz=0,
+        #    never heading (so _update_command's heading recompute never overwrites wz=0).
+        remaining_ids = env_ids_t[~is_turn]
+        if remaining_ids.numel() > 0:
+            r2 = torch.empty(remaining_ids.numel(), device=self.device)
+            is_translate = r2.uniform_(0.0, 1.0) <= self.cfg.rel_translate_only_envs
+            translate_ids = remaining_ids[is_translate]
+            if translate_ids.numel() > 0:
+                self.vel_command_b[translate_ids, 2] = 0.0
+                self.is_heading_env[translate_ids] = False
+
+
+@configclass
+class TurnAwareVelocityCommandCfg(mdp.UniformVelocityCommandCfg):
+    """See TurnAwareVelocityCommand. All three new fields default to values that make this a no-op
+    (rel_*_envs=0.0 means no env is ever selected for either carve-out)."""
+
+    class_type: type = TurnAwareVelocityCommand
+    rel_turn_in_place_envs: float = 0.0
+    turn_in_place_wz_range: tuple = (0.3, 1.0)
+    rel_translate_only_envs: float = 0.0
 
 
 @configclass
@@ -244,6 +310,7 @@ class SkyentificRewardsCfg:
             "command_name": "base_velocity",
             "threshold_min": 0.2,
             "threshold_max": 0.5,
+            "yaw_gate": False,
         },
     )
     feet_air_time_biped = RewTerm(
@@ -254,6 +321,7 @@ class SkyentificRewardsCfg:
             "command_name": "base_velocity",
             "threshold_min": 0.0,
             "threshold_max": 0.4,
+            "yaw_gate": False,
         },
     )
     feet_slide = RewTerm(
@@ -356,6 +424,21 @@ class SkyentificPoclegsRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.dof_pos_limits.weight = -1.0
 
         self.observations.policy.height_scan = None
+
+        # exp06 J0-2 (2026-09-17): swap base_velocity to the turn-in-place-aware command term.
+        # The three new fields default to 0.0, so with no launch-line override this is a no-op --
+        # every other field is copied verbatim from the command cfg the parent class already built.
+        old_cmd = self.commands.base_velocity
+        self.commands.base_velocity = TurnAwareVelocityCommandCfg(
+            asset_name=old_cmd.asset_name,
+            resampling_time_range=old_cmd.resampling_time_range,
+            rel_standing_envs=old_cmd.rel_standing_envs,
+            rel_heading_envs=old_cmd.rel_heading_envs,
+            heading_command=old_cmd.heading_command,
+            heading_control_stiffness=old_cmd.heading_control_stiffness,
+            debug_vis=old_cmd.debug_vis,
+            ranges=old_cmd.ranges,
+        )
 
 
 @configclass
