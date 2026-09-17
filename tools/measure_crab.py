@@ -503,6 +503,7 @@ def main():
             # per-joint (all 10 joints, in robot.joint_names order): applied/computed torque, joint speed
             n_j = robot.num_joints
             tau_app_sumsq = torch.zeros(n_j, device=device)
+            tau_cmp_sumsq = torch.zeros(n_j, device=device)  # exp09 N0-2: computed-torque RMS, same pattern as tau_app_sumsq
             tau_app_cnt = torch.zeros(n_j, device=device)
             sat_hit_j = torch.zeros(n_j, device=device)
             tau_app_chunks = []
@@ -572,6 +573,7 @@ def main():
                     tau_cmp_chunks.append(tau_cmp_abs[m].clone())
                     qdj_chunks.append(qd[m].clone())
                 tau_app_sumsq += (tau_app_abs**2 * mf.unsqueeze(-1)).sum(dim=0)
+                tau_cmp_sumsq += (tau_cmp_abs**2 * mf.unsqueeze(-1)).sum(dim=0)
                 tau_app_cnt += mf.sum()
                 sat_hit_j += ((tau_app_abs >= 0.95 * limits).float() * mf.unsqueeze(-1)).sum(dim=0)
 
@@ -617,6 +619,7 @@ def main():
         tau_app_p95_j = torch.quantile(tau_app_all.float(), 0.95, dim=0)
         tau_app_max_j = tau_app_all.max(dim=0).values
         tau_app_rms_j = torch.sqrt(tau_app_sumsq / tau_app_cnt.clamp(min=1.0))
+        tau_cmp_rms_j = torch.sqrt(tau_cmp_sumsq / tau_app_cnt.clamp(min=1.0))  # exp09 N0-2
         tau_cmp_p95_j = torch.quantile(tau_cmp_all.float(), 0.95, dim=0)
         tau_cmp_p99_j = torch.quantile(tau_cmp_all.float(), 0.99, dim=0)
         tau_cmp_max_j = tau_cmp_all.max(dim=0).values
@@ -662,6 +665,7 @@ def main():
             row[f"tau_cmp_p95_{jn}"] = float(tau_cmp_p95_j[j].item())
             row[f"tau_cmp_p99_{jn}"] = float(tau_cmp_p99_j[j].item())
             row[f"tau_cmp_max_{jn}"] = float(tau_cmp_max_j[j].item())
+            row[f"tau_cmp_rms_{jn}"] = float(tau_cmp_rms_j[j].item())  # exp09 N0-2
             row[f"sat_frac_{jn}"] = float(sat_frac_j[j].item())
             row[f"qd_p95_{jn}"] = float(qdj_p95_j[j].item())
             row[f"qd_max_{jn}"] = float(qdj_max_j[j].item())
