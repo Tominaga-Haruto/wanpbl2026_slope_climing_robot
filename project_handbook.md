@@ -3,7 +3,7 @@
 **このファイルは毎回最初に読む。** 他のドキュメントはここから必要なときだけ見に行く。
 何かあったとき、チャットを切り替えるときに更新する。
 
-最終更新: 2026-09-17（実験06 その場旋回修正の失敗判定の直後）
+最終更新: 2026-09-17夜（実験07 ハング原因特定・その場旋回詳細診断の直後。実験08起動中）
 
 ---
 
@@ -83,6 +83,14 @@ Isaac Lab ＋ RSL-RL で歩かせる。**最終目的は坂を登らせること
      Isaac Lab 同梱の G1/H1 は `track_ang_vel_z_world_exp` と `track_lin_vel_xy_yaw_frame_exp`
      （yaw のみ）を使う。**引数の並びが同じなので `func` の差し替えだけで試せる。**
      もしくは std を縮めて大きい wz への感度を上げる。
+- **実験07で追加診断（2026-09-17夜、`docs/experiments/exp07_hang_and_turn_diag.md`）**:
+  S6/S9の立脚足yaw角速度（0.07〜0.09 rad/s）はS1歩行時（0.33〜0.45）より小さく、「滑って
+  回れない」わけではない。HRトルクはp95で0.6〜2.3 N・mと、実効上限53 N・mの2〜4%しか
+  使っていない（K2で報告した「HR飽和率0.0000」はPhysXソルバー側effort_limit(1e9)を見ていた
+  誤りで無意味）。外力トルクを漸増すると2.76〜5.74 N・mで足が滑り・胴体が回り始める（K3）。
+  「回れないのではなく、回ろうとしていない」という見方を補強。評価ツール自体のハング原因
+  （同一プロセスでenvを閉じて作り直すと必ずハング）も特定・修正済み（1プロセス1env化）。
+  → **実験08でtrack_ang_vel_z_expのstd/weightのみ変更して追試中**（本ドキュメント最終更新時点）。
 
 ### 初期姿勢
 
@@ -200,7 +208,7 @@ Isaac Lab ＋ RSL-RL で歩かせる。**最終目的は坂を登らせること
 
 - リポジトリ: `D:\Tominaga\slope-climbing-robot`、ブランチ `main`
 - remote: `https://github.com/Tominaga-Haruto/wanpbl2026_slope_climing_robot.git`
-- 最新 commit: `8ea9b54`（`dump_baseline_env_yaml.py` 追加。実験06 J0/評価基盤拡張の一連）
+- 最新 commit: `e7a7924`（実験07: ManagerBasedRLEnv二重生成ハングの特定・修正、K2/K3診断ツール追加）
 - **未 push。** push は下の 1 行:
 
 ```powershell

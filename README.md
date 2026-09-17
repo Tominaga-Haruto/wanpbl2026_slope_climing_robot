@@ -84,6 +84,7 @@ slope-climbing-robot/
 | `experiments/exp02_stop1.md` | 実験02 停止点1。C_flatonly の 2400 で結論が変わった回 |
 | `experiments/exp02_stop2.md` | 実験02 停止点2。E_yawcmd と F_BtoRough |
 | `experiments/exp06_turn_in_place.md` | 実験06。その場旋回(S6/S9)修正の全経緯と**失敗判定**。D1〜D3(実験04/05)もここに格納 |
+| `experiments/exp07_hang_and_turn_diag.md` | 実験07。評価スクリプトのハング原因特定(1プロセス1env)と、その場旋回の詳細診断(K1〜K4) |
 
 ## 6. `chats/` — チャットごとの作業記録
 
