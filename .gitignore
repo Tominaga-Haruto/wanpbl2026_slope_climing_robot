@@ -35,3 +35,11 @@ isaac_env/
 # Onshape部品キャッシュ
 **/*.part
 **/assets/*.part
+
+# 手作業前のバックアップとローカル実行の生ログ
+*.bak_*
+*.bak
+**/logs/
+
+# `claude/` 直下の旧ローカル指示。実際に読むのはルート AGENTS.md と AGENTS.override.md。
+claude/AGENTS.md

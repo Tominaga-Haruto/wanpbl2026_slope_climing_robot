@@ -1,29 +1,31 @@
 # このプロジェクトのドキュメント案内
- 
+
 > **これは何:** `claude/` 以下に何のファイルがあり、いつ・どれを読むべきかの地図。
 > 新しいチャットを始めたら、まずこれを読んでから該当文書に進む。
- 
+
 ---
- 
+
 ## 🚨 絶対ルール: チャットごとに `chats/` へ記録を1ファイル追加する（毎回・必ず）
- 
+
 > **どのチャットでも、終わる前に必ず `claude/chats/YYYY-MM-DD_短い件名.md` を1ファイル新規作成する。**
 > **ユーザーに言われなくてもやる。** 作業が小さくても、人違い・雑談で終わっても、何か一つでも文書を触ったり分かったことがあれば書く。
 > **過去に何度か抜けたことがあり、ユーザーから名指しで「毎回必ず」と指示されている（2026-09-15）。**
- 
+
 - **タイミング:** 作業の区切り、またはユーザーが「閉じる」「終わり」と言った時点で、返事を返す**前に**書く。後回しにしない。
 - **書き方:** 下の「`chats/` ── 個々のチャットの記録」節のテンプレートに従う。
 - **セットでやること:** この README 末尾の**索引に1行追加**する。
 - **チェック:** チャットを閉じる返事の中で「`chats/…md` を追加した」と一言書く。**書けないなら、まだ追加していない。**
+
 ## 🚨 絶対ルール2: ユーザーが「引き継ぐ」と言ったら、すぐ引き継ぎ書と関連文書を更新する（2026-09-17、ユーザー指示）
- 
+
 - **新しい解析（届いたログの読みなど）を始めない。** ユーザーは次のチャットでやるつもりで渡している。先にやるとトークンの無駄（2026-09-17 に実機側で起きた）。受け取ったログ名は引き継ぎ書に「最初のタスク」として書く。
 - やること: 担当の引き継ぎ書（実機側 `next_chat_briefing_motor.md` / 学習側 `next_chat_briefing.md`）の書き直し ＋ 正本（findings・checklist 等）への反映 ＋ `chats/` の記録 ＋ この README の現在の状況と索引。
 - 引き継ぎ書に入れる「状況の整理」: やってきたこと、できるようになったこと、コマンド解説、やり残していること、次の一手。
+
 ---
- 
+
 ## 読む順番（毎回）
- 
+
 1. **`project_handbook.md`** ── 最優先・毎回読む。プロジェクトの前提・鉄則・現在地・環境・手順のすべて。PART A（毎回見る）と PART B（必要な作業のとき見る）の2部構成。
 2. **`handover.md`** ── 2番目に読む。「今どこにいて、次に何をすればいいか」を15分で掴むための引き継ぎ書。セッションをまたいだ経緯・決定事項・詰まったときの入口はここ。
 3. **次チャットへの指示書（担当で分かれている）:**
@@ -32,13 +34,14 @@
    - **実機側（ノートPC・モーター・T265・デプロイ用の制御ループ）:** **`next_chat_briefing_motor.md`（2026-09-17 夜版）。** 状況の整理（やってきたこと・できるようになったこと・ゲイン換算・T265）、M1〜M9 の状態、次の一手（最初は `session_214916.txt` を読む）、コマンド解説、やり残し。
 4. 必要になった時だけ、下記の個別資料や `chats/` の過去ログを読む。
 5. **終わるときは、冒頭の絶対ルールどおり `chats/` に記録を追加する。**
+
 **`handoff.md` は削除済み（2026-09-06）。** 内容が `project_handbook.md` と重複していたため統合した。
- 
+
 ---
- 
+
 ## 現在の状況（2026-09-17 更新）
- 
-- **★★★★★★★★★★★★★★★★★ 実機側（2026-09-17 夜）: 脚を外した ID34（AK80-9＝右足首 LR_FFE）と ID18（AK10-9＝右膝 LR_KFE）で Kd の分離が決着。c_p ≈ c_d（AK80-9 0.523 / 0.523、AK10-9 1.258 / 1.216）→ 機種別に割れば stiffness:damping 比が保てる（実効 damping ×1.0）。速度レンジは AK80-9 ±65・AK10-9 ±28 で確定、極対数 21 も確定。ゲインは機種によらず電流で出ていて、トルク指令の目盛りが機種で 2.3 倍違う → Kt（物理 N·m）の優先度が上がった。jit 合格（最大 23 ms）。T265 は Windows ノートPC（Python 3.10 の `.venv310`、pyrealsense2 2.53.1）で 200 Hz 取得でき、base 座標の符号と velocity の world 表現を確定。AK10-9 の電源再投入の結果（`logs\v7_20260917\session_214916.txt`）は次チャットで読む。ver8 は `py -3.13` で起動（`python` は 3.10 本体になった）。明日（09-18）残りのモーターを配線予定。** → **`next_chat_briefing_motor.md`（夜版）**、`chats/2026-09-17_motor-kd-separation-t265.md`
+
+- **★★★★★★★★★★★★★★★★★ 実機側（2026-09-17 夜）: 脚を外した ID34（AK80-9＝右足首 LR_FFE）と ID18（AK10-9＝右膝 LR_KFE）で Kd の分離が決着。c_p ≈ c_d（AK80-9 0.523 / 0.523、AK10-9 1.258 / 1.216）→ 機種別に割れば stiffness:damping 比が保てる（実効 damping ×1.0）。速度レンジは AK80-9 ±65・AK10-9 ±28 で確定、極対数 21 も確定。ゲインは機種によらず電流で出ていて、トルク指令の目盛りが機種で 2.3 倍違う → Kt（物理 N·m）の優先度が上がった。jit 合格（最大 23 ms）。T265 は Windows ノートPC（Python 3.10 の `.venv310`、pyrealsense2 2.53.1）で 200 Hz 取得でき、base 座標の符号と velocity の world 表現を確定。AK10-9 の電源再投入の結果（`logs\\v7_20260917\\session_214916.txt`）は次チャットで読む。ver8 は `py -3.13` で起動（`python` は 3.10 本体になった）。明日（09-18）残りのモーターを配線予定。** → **`next_chat_briefing_motor.md`（夜版）**、`chats/2026-09-17_motor-kd-separation-t265.md`
 - **★★★★★★★★★★★★★★★★ 実験07 停止点7（2026-09-17 深夜）: ハングの原因は同じプロセスで env を閉じて作り直すこと（1プロセス1env で解決）。その場旋回では立脚足は滑らず、HR は上限の 2〜4% しか使っていない＝回ろうとしていない（Cowork の足裏の摩擦説は外れ）。足裏を平らにしても action 0 では立てない。→ 実験08: track_ang_vel_z_exp の std 0.35（と weight 1.0）で2本。** → **`wrs_experiment08_instruction.md`**、`chats/2026-09-17_exp04-stop4-review.md` の末尾
 - **★★★★★★★★★★★★★★★ 実験06 完了（2026-09-17 夜）: その場旋回は 7 チェックポイントすべて不合格（最大 0.12、学習が進むほど 0 へ）、既存基準は退行なし。次は学習せず診断（実験07: ハングの原因、S6 の歩数・HR・立脚足の滑り・接地点・報酬の内訳、足が滑り出す yaw トルク、足裏）。WRS も Cowork もチャットを切り替え。デプロイ候補は H_eff13p5@2999（第一）と G_real_peak@2999（予備）のまま。** → **学習側の次チャットは `next_chat_briefing.md`（夜版）**、WRS の新チャットには **`wrs_new_chat_start.md`**、経緯とトークンの実測は `chats/2026-09-17_exp04-stop4-review.md` の末尾
 - **★★★★★★★★★★★★★★ 実験06 停止点6a（2026-09-17 15時）: コードの変更は commit `dd970bf`（足上げ報酬の yaw_gate、TurnAwareVelocityCommand、その場旋回の指令 0.38% → 19.95%）。学習は未起動。再開は `agent.resume` ではなく `--resume --load_run --checkpoint`。WRS の起動行案は平地の地形の上書きと rel_heading_envs 0.5 が抜けていた（Cowork が指摘）→ H_eff13p5 の run と env.yaml を丸ごと diff してから起動。ハングは build_env_cfg より前（import 順・起動引数）を疑って全文の diff を取らせる。** → `chats/2026-09-17_exp04-stop4-review.md` の追記
@@ -46,8 +49,8 @@
 - **★★★★★★★★★★★★ 実験04 停止点4（2026-09-17 13:21）→ デプロイ方策は G_real_peak@2999 と H_eff13p5@2999 の両方を持っていく（実機は H_eff13p5 から、ユーザー決定）。H_gainDR はほぼ全指令で静止し除外。共通条件の不合格は 3 対 3 の同点（G: damping ×0.5 の直進 yaw・damping ×2・速度 0／H_eff13p5: stiffness ×0.7 の転倒 6.2%・damping ×2・速度 0）。ゲインのずれは実機で測れば合わせられるが、トルク側（条件4 で G 転倒 3.1%・飽和 40%、H 0%・23%）は消えない。damping ×2 はどれも不合格 → 実機の Kd 分離は必須（→ 09-17 夜に決着）。速度観測の途絶: 0 埋めは 0.2 s まで、直前値保持は 0.5 s まで転倒 0%。P6-1（足裏）はハングで未実施。ユーザー判断: その場旋回ができないのはまずい → 実験05 でデプロイ準備と並行して原因を調べ、直す学習へ。** → `chats/2026-09-17_exp04-stop4-review.md`、WRS へは **`wrs_experiment05_instruction.md`**
 - **★★★★★★★★★★★ 実機側のまとめ（2026-09-17 昼）: MIT で位置指令が通り（ID34）、原点手順（起動 → フィードバック待ち → 決まった姿勢で `o 0`）・指令途絶でトルクを出し続ける・電流は符号が信用できない、が確定。デプロイまでの実機側の最低限を M1〜M9 に整理（夜に M2・M3 済み、M6 は符号まで済み）。** → `next_chat_briefing_motor.md`、`chats/2026-09-17_motor-summary-handover.md`
 - **★★★★★★★★★★ 実験04 停止点2（2026-09-17 朝）: H_nolinvel は不採用（S1 v_x 0.315、横移動で静止率 0.78、stiffness ×0.7 で転倒 100%）→ 速度観測は T265 から作る（途絶検出と停止が必須、取り付け位置補正も必要）。H_eff13p5 は G_real_peak と同等でトルクが低い。デプロイ候補は G_real_peak / H_eff13p5 / H_gainDR の3本から停止点4 で選ぶ。旋回（その場）はできないが後回し（ユーザー決定）、横移動と旋回はコントローラーの割り当てで分ける案。** → `chats/2026-09-17_exp04-stop1-review.md` の追記、WRS へは `wrs_experiment04_followup_instruction.md` 末尾の P6
-- **★★★★★★★★★ 実験04 停止点3（2026-09-17 朝）: 条件9（damping ×2）は数値不安定ではない（dt 半分でも転倒 98.4%）→ 実機の Kd 換算は必須の関門。G_real_peak は base_lin_vel を 0 にすると壊滅（バイアス・雑音・100 ms ホールドには頑健）→ H_nolinvel の価値が上がった。足裏平面は world で -30°、COM は支持範囲より前。H_gainDR（damping ×0.5〜2.0）を 07:55 起動。次は P6（足裏の出どころ、速度途絶の許容時間）と停止点4（`wrs_experiment04_followup_instruction.md` 末尾）。H_nolinvel の判定は停止点2 の中身待ち。** → `chats/2026-09-17_exp04-stop1-review.md` の追記
-- **★★★★★★★★ 実験04 停止点1（2026-09-17 00:09）: G_real_peak は effort 13.5 / 12（Kt 0.7 倍想定）・遅延 4 / 8 step・friction ×2・質量 +1 kg・地面摩擦 0.5・ノイズ・吊り下ろしで両 iter 合格。不合格は effort 9.0（2400）、stiffness ×0.7（2400）、damping ×0.5（両 iter、小旋回）、damping ×2.0（両 iter、2999 は転倒 100%）。ONNX は誤差 1.1e-5 で合格、正規化なし。保険の学習 H_nolinvel・H_eff13p5 を 00:08 起動。**
+- **★★★★★★★★★★ 実験04 停止点3（2026-09-17 朝）: 条件9（damping ×2）は数値不安定ではない（dt 半分でも転倒 98.4%）→ 実機の Kd 換算は必須の関門。G_real_peak は base_lin_vel を 0 にすると壊滅（バイアス・雑音・100 ms ホールドには頑健）→ H_nolinvel の価値が上がった。足裏平面は world で -30°、COM は支持範囲より前。H_gainDR（damping ×0.5〜2.0）を 07:55 起動。次は P6（足裏の出どころ、速度途絶の許容時間）と停止点4（`wrs_experiment04_followup_instruction.md` 末尾）。H_nolinvel の判定は停止点2 の中身待ち。** → `chats/2026-09-17_exp04-stop1-review.md` の追記
+- **★★★★★★★ 実験04 停止点1（2026-09-17 00:09）: G_real_peak は effort 13.5 / 12（Kt 0.7 倍想定）・遅延 4 / 8 step・friction ×2・質量 +1 kg・地面摩擦 0.5・ノイズ・吊り下ろしで両 iter 合格。不合格は effort 9.0（2400）、stiffness ×0.7（2400）、damping ×0.5（両 iter、小旋回）、damping ×2.0（両 iter、2999 は転倒 100%）。ONNX は誤差 1.1e-5 で合格、正規化なし。保険の学習 H_nolinvel・H_eff13p5 を 00:08 起動。**
   **Cowork の推奨（ユーザー判断待ち）: デプロイ候補は G_real_peak（暫定 2999）。H_nolinvel が基準と頑健性で新しい不合格を出さなければ、T265 の速度を使わない方を第一候補。**
   **実機側の最優先は Kd の分離（c_d が 0.55 / 0.71 / 1.19 のどれかで実効 damping が ×1.0〜×2.2 に振れ、×2 は不合格帯）。Kt は優先度を下げる。**（→ 09-17 夜: Kd は決着、Kt は優先度が戻った） 条件9 はシムの数値不安定の疑いもある。
   **次は WRS に `wrs_experiment04_followup_instruction.md`（停止点2 は予定どおり ＋ P5: 表の欠け、dt 半分での条件9、速度への依存、golden npz とデプロイ用アクチュエータ表、H_gainDR、形状の出し直し）。** 左右 4 cm のずれは base 原点の横ずれ 2 cm で全部説明できるはず（WRS の「半分」は訂正）。 → `chats/2026-09-17_exp04-stop1-review.md`
@@ -58,7 +61,7 @@
 - **★★★★★ デプロイの合格基準が決まった（2026-09-16 夕、ユーザー決定）。** トルク: **S1 で RMS ≤ 定格（AK10 18 / AK80 9）、最大 ≤ ピーク（AK10 53 / AK80 18）**（シムでは最大は effort_limit で自動的に守られるので、飽和率と切る前トルクで見る）。旋回: **大旋回は不要、小旋回で可。ただし向き保持に使える小さな yaw 追従は必須**（S7/S8 = 前進 0.5 ＋ yaw ±0.3 で判定）。（「B / E は小旋回も満たしていない」は S6 だけを見た誤りで、B は S7/S8 で合格だった） → `next_chat_briefing.md` §1a
   **実験03 の指示書を停止点2の結果で改訂済み**（S7〜S9、computed torque・飽和率、左右対称性、旋回が出ない件の材料、並走の実測、占有見込み約5時間）。
   **並走は 4096 env × 2本（最大3本）。1024 env × 6 本は VRAM に入らず、GPU 計算も飽和済み**（`next_chat_briefing.md` §2a）。
-- **実験02 停止点2（2026-09-16 16時）: E_yawcmd@1999 は旋回出ず（S6 +0.063）。F_BtoRough は terrain_levels 0.98 → 4.69、平地歩行保持、ただし S1 yaw rate +0.324 で円を描く。stiffness 4倍でも前に倒れる（沈み仮説は外れ）。** WRS機の `tools\\logs\\REPORT_exp02_stop2.md`
+- **実験02 停止点2（2026-09-16 16時）: E_yawcmd@1999 は旋回出ず（S6 +0.063）。F_BtoRough は terrain_levels 0.98 → 4.69、平地歩行保持、ただし S1 yaw rate +0.324 で円を描く。stiffness 4倍でも前に倒れる（沈み仮説は外れ）。** WRS機の `tools\\\\logs\\\\REPORT_exp02_stop2.md`
 - **★★★★ ゴール変更: まず平地で実機デプロイ（坂は時間が余ったら。2026-09-16 15時、ユーザー決定）。実機は組み上がっている（ユーザー申告）。**
   **旧アクチュエータ設定（AK80-9 に effort 20〜30 N·m、HFE が AK10 と同グループ）で学習した方策は使わず、実機準拠で一から学習し直す → 実験03（`wrs_experiment03_instruction.md`、WRS の新チャット）:** 関節ごと5グループ、effort AK10 53 / AK80 18（G_real_peak）と定格 18 / 9（G_real_rated）を並走、friction・armature は実測/暫定値。同時に ONNX 書き出し・観測契約 `obs_contract.md`・B のトルク実態・立てない件の診断。
   デプロイ残作業の表は `next_chat_briefing.md` §3（実機側は `next_chat_briefing_motor.md` §2 が新しい）。
@@ -68,8 +71,8 @@
   **訂正: `error_vel_xy`/`error_vel_yaw` はエピソード長に比例（正規化値＝生値×500/episode 長）。手順書 A5・operator 指示書 §6 の目安は未修正。`max_init_terrain_level` を上げると地形は難しくなる。**
   実験02 P3（`wrs_experiment02_p3_instruction.md`）は commit `6c80638` 済み・実行済み。
 - **★ 柱Aの実行環境は WRS共用PC（RTX 3090 Ti / Windows 11）に移った。環境構築は 2026-09-15 に完了。**
-  `D:\\Tominaga\\` に Isaac Sim 5.1 / Isaac Lab 2.3.2 / 自作コードを配置し、同梱タスクで学習が回ることを確認済み。→ `wrs_pc_environment.md`
-  **`project_handbook.md` / `handover.md` / `next_chat_briefing.md` は 2026-09-16 に WRS機・新しい機体の前提へ書き換え済み。** `wrs_pc_operator_instruction.md` は古い（`D:\\haruto\\` 前提）。
+  `D:\\\\Tominaga\\\\` に Isaac Sim 5.1 / Isaac Lab 2.3.2 / 自作コードを配置し、同梱タスクで学習が回ることを確認済み。→ `wrs_pc_environment.md`
+  **`project_handbook.md` / `handover.md` / `next_chat_briefing.md` は 2026-09-16 に WRS機・新しい機体の前提へ書き換え済み。** `wrs_pc_operator_instruction.md` は古い（`D:\\\\haruto\\\\` 前提）。
 - **★★ 再エクスポート完了（2026-09-16 未明、WRS機）。新 USD で 64 env / 20 iter のテスト起動が完走。** 木構造 5/5・根＝胴体 2.918 kg・総質量 10.1058 kg。
   **途中で URDF の座標と関節の符号の問題が2つ見つかり、後処理で直した → 約束事は `robot_model_conventions.md`（正本）:**
   ① base の +X が機体の横だった（**旧 URDF も同じ＝過去の学習は「前進指令＝横方向」だった可能性が高い。カニ歩きの有力な説明**）→ base を +90° 回転。
@@ -83,16 +86,17 @@
   **「熱依存」という読みは 2026-09-14 に棄却された**（持続時間が休止時間と逆転）。→ `alienware_repair_instruction.md`
   **費用ゼロの手が4つ未実施**（保証確認・挿し直し4点・ホコリ除去・モニターのポート変更）
 - **USD・STL・チェックポイントは Alienware の中にしかない。** ただし再エクスポートすればどれも作り直しになるので、**救出の優先度は下がった。** **ただし `my_robot_code/` の未 push 分は作り直せないので救出対象**
-- **柱B（Windows ノートPC、`C:\\Users\\harut\\Connect2USB2CAN`）: 現行は `motor_console_ver8.py`（`py -3.13` で起動）。MIT（モード8）で位置指令が通る。**
-  MIT 位置＝サーボ角、`o 0` で両方0、AK80-9 は電源再投入で角度が 80 deg の窓に折り返す（AK10-9 は確認中）、**Kp・Kd 換算は機種別（AK80-9 0.523 / AK10-9 1.258・1.216）**、指令途絶でトルクを出し続ける、電流は符号が信用できない、遅れ最小 8 ms、50 Hz の揺れ最大 23 ms。T265 は `.venv310\Scripts\python t265\t265_check.py`。
+- **柱B（Windows ノートPC、`C:\\\\Users\\\\harut\\\\Connect2USB2CAN`）: 現行は `motor_console_ver8.py`（`py -3.13` で起動）。MIT（モード8）で位置指令が通る。**
+  MIT 位置＝サーボ角、`o 0` で両方0、AK80-9 は電源再投入で角度が 80 deg の窓に折り返す（AK10-9 は確認中）、**Kp・Kd 換算は機種別（AK80-9 0.523 / AK10-9 1.258・1.216）**、指令途絶でトルクを出し続ける、電流は符号が信用できない、遅れ最小 8 ms、50 Hz の揺れ最大 23 ms。T265 は `.venv310\\Scripts\\python t265\\t265_check.py`。
   → 実測の正本 `motor_can_findings.md`、索引 `motor_bench_checklist.md`、T265 `realsense_t265.md`、公式資料 `motor_mit_official_notes.md`、**次の一手とコマンド解説 `next_chat_briefing_motor.md`**
 - **実機が要らないデプロイ準備（制御ループ ver9 の乾式テスト）が溜まっている。** WRS から H_eff13p5 の ONNX・golden npz・obs_contract・アクチュエータ設定を受け取ってから。
+
 ---
- 
+
 ## 個別資料（そのテーマを触るときだけ読む）
- 
+
 ### 今アクティブな指示書
- 
+
 | ファイル | 内容 | いつ読む |
 |---|---|---|
 | **`wrs_overnight_20260918_instruction.md`** | **WRS機 Claude Code の新チャット（Opus）に貼る夜間の自走の指示（2026-09-18 01:00〜09:45）。** 仮デプロイ用パッケージ、学習3本（N_w1_seed2 / N_w1p5 / P_gainDR_narrow）、事前の判断規則による2巡目、30 分ごとの見回りと許した手直し5種類、09:30 の報告と 09:45 の再生コマンド | **今（実行中）** |
@@ -120,13 +124,13 @@
 | **`wrs_training_strategy.md`** | **再エクスポート後の学習方針。** ゲインの考え方・「速すぎる」対策の順番・heading 方針・9月変更の仕分け・坂への段取り。**§4 の指令を絞る案は立ち止まりの給料を上げる（`crab_standstill_countermeasures.md` §1）** | 段階1以降を決めるとき |
 | `urdf_reexport_instruction.md` | 再エクスポート手順の**旧版（Alienware / Ubuntu 前提）**。検算項目の考え方は同じ | 読まなくてよい |
 | `wrs_pc_host_instruction.md` | **WRS機の Claude Code に渡した環境構築の指示書**（2026-09-15 実行済み） | 環境を作り直すとき |
-| `wrs_pc_operator_instruction.md` | **旧版（2026-09-14）。** `D:\\haruto\\` 前提で古い | 読まなくてよい |
+| `wrs_pc_operator_instruction.md` | **旧版（2026-09-14）。** `D:\\\\haruto\\\\` 前提で古い | 読まなくてよい |
 | `alienware_repair_instruction.md` | **Alienware 故障の切り分け手順**（間欠故障。費用ゼロの手が4つ未実施） | 本体の前に行けるとき |
 | `mit_implementation_briefing.md` | **古い（ver6 時点）。** 「位置指令未達・実効Kd 0.48」の前提。**`next_chat_briefing_motor.md` §4 と `motor_can_findings.md` が後継** | 読まなくてよい |
 | **`motor_mit_official_notes.md`** | **公式資料（v3.0.0 / V1.0.15 / FAQ / 製品ページ）の要点、仮説 H1〜H6 と検証コマンドの対応、ver6 の隠れ誤差（速度0欄の半LSB）、シム検算** | 実機のMITを触るとき |
- 
+
 ### 調査記録・リファレンス
- 
+
 | ファイル | 内容 | いつ読む |
 |---|---|---|
 | `motor_can_findings.md` | **実機CANの実測結果（正本、2026-09-17 夜更新）。** 機種別の r_v・c_d・c_p・原点・jit、モード8・ペイロード順・レンジ（AK80 ±65 / AK10 ±28 確定）・量子化・電源再投入・指令途絶・電流の符号 | 実機の通信仕様や数値を確認するとき |
@@ -139,78 +143,62 @@
 | `rough_env_cfg_walkthrough.md` | `rough_env_cfg.py` の解説 | env_cfg の中身を読み解くとき |
 | `isaaclab_edit_guide.md` | Isaac Lab 側の編集ガイド | Isaac Lab 本体に手を入れる前 |
 | `template_code_reference.md` | 見本コード（Skyentific PocLegs）のリファレンス | 見本の実装を確認するとき |
- 
+
 ### 廃止
- 
+
 | ファイル | 状態 |
 |---|---|
 | `urdf_tree_fix_instruction.md` | **廃止（2026-09-14）。** URDF の親付け替えパッチは不要になった。FK 検証などの技術メモとしてのみ残している |
- 
+
 **注意1:** `isaaclab_edit_guide.md` と `rough_env_cfg_walkthrough.md` には、
 **`bad_orientation` の実装状況と報酬 weight について古い誤記が残っている可能性がある。**
 さらに **`bad_orientation` の limit_angle が文書間で食い違っている**（手順書 1.3 rad / 旧 handover 0.8 rad）。
 **WRS機で実物を読めるようになったので、grep して統一すること。** **ただし WRS機のコードは 08-21 版なので、grep 結果は「08-21 時点の値」であり、Alienware 上の最終値とは限らない。**
- 
+
 **注意2（2026-09-14 に発見、2026-09-17 夜更新）:** **`project_handbook.md` の A7 は「実機で動いているのはサーボモード。MIT は実装済みだが未検証」のまま古い。`actuator_params.md` §0c も「Kd 0.48」のまま古い。** 実測の正本は `motor_can_findings.md`（MIT で位置指令まで通った、機種別の Kp・Kd 換算）。**手順書 A7 と §0c を書き換えること。**
- 
+
 ---
- 
+
 ## `chats/` ── 個々のチャットの記録
- 
+
 > 🚨 **毎チャット必ず1ファイル追加（冒頭の絶対ルール）。省略・後回し禁止。**
- 
+
 `project_handbook.md` と `handover.md` は「今の正しい状態」だけを書く**体系的な記録**。それとは別に、
 **「あのときのチャットで何をどう決めたか」という個々の記録**を `chats/` 以下に残していく。
- 
+
 ### 目的
 - 手順書・引き継ぎ書は書き換え式なので、**過去の試行錯誤や当時のやり取りは消えていく。**
 - 「あの時なぜこの数値にしたんだっけ」を後から追えるように、チャット単位の記録を積み上げる。
+
 ### ファイルの置き方
 - パス: `claude/chats/YYYY-MM-DD_短い件名.md`
 - **1チャット＝最低1ファイル。例外なし。** 1チャットで複数トピックを扱ったら分けてよい。長く続く作業は日付を分けてよい。
 - **これは追記式でよい。** 書き換え原則はここには適用しない。古いチャットのファイルは基本触らない。
 - **作ったら下の索引に1行追加する。**
+
 ### 各ファイルに書くこと（テンプレート）
 ```markdown
 # YYYY-MM-DD 件名
- 
+
 ## やったこと
 （このチャットで何を進めたか、時系列で）
- 
+
 ## 決めたこと・分かったこと
 （結論・数値・判断の根拠）
- 
+
 ## 手を動かした場所
 （触ったファイル・実行したコマンドの要約。フルログは不要、要点だけ）
- 
+
 ## 積み残し・次にやること
 （このチャットの続きとして誰かがやるべきこと）
 ```
- 
+
 ### 体系的記録との使い分け
 - **`project_handbook.md` / `handover.md` に書く:** 今後ずっと有効な事実・手順・現在地。
 - **`chats/` に書く:** その結論に至った経緯・具体的なやり取り・当時の判断理由。
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
+
 ### 索引（新しい順）
 - `chats/2026-09-18_overnight-and-controller.md` ── **実験09 の中間（合格は L_angstd_w1 の 4000・4200 だけで幅 200 iter、@4000 は stiffness ×0.7 で全シナリオ転倒＝旋回は候補にならず）を受けて、WRS の新チャット（Opus）に夜間の自走の指示: 仮デプロイ用パッケージ（H_eff13p5@2999 第一・G_real_peak@2999 予備・L_angstd_w1@4000 実験用）、学習3本（N_w1_seed2 / N_w1p5 / まっすぐの改良 P_gainDR_narrow）、事前の判断規則の2巡目、許した手直し5種類、09:45 に再生コマンド。コントローラー（Switch 2 Pro）準備チャットの指示書 `controller_prep_briefing.md`**
 - `chats/2026-09-17_exp08-stop8b-review.md` ── **実験08 停止点8b の講評。L_angstd（std 0.35・weight 0.5）は全不合格、L_angstd_w1（weight 1.0）は @4000 だけ合格（S6 +0.268 / S9 −0.353）で @3600・@4498 は左右の釣り合いが崩れて不合格 → 効いたのは weight 1.0、1点の合格ではデプロイ候補にしない。直進の候補は H_eff13p5@2999 のまま。実験09 の指示書（密な評価 256 env × 2回、関節トルク RMS の実装、@4000 の頑健性スイープ、N_w1_seed2 / N_w1p5、事前の判定規則「連続 300 iter の合格範囲」）。push コマンドを提示。`next_chat_briefing.md` を深夜版に**
 - `chats/2026-09-17_motor-kd-separation-t265.md` ── **実機側（夜）。脚を外した ID34（AK80-9＝LR_FFE 右足首）・ID18（AK10-9＝LR_KFE 右膝）で `vscale`・`morg`・`kpscale` → Kd 分離が決着（c_p ≈ c_d: 0.523/0.523、1.258/1.216、機種別に割れば比が保てる）、速度レンジ AK80 ±65・AK10 ±28 と極対数 21 を確定、ゲインは機種によらず電流で出ていてトルク指令の目盛りが 2.3 倍違う → Kt の優先度が上がった。jit 合格（最大 23 ms）。T265 を Windows で動かす（Python 3.10 `.venv310`・pyrealsense2 2.53.1、起動の再試行と子プロセス再起動。Cowork の変更で一度悪化）、base 座標の符号と velocity の world 表現を確定。AK10-9 は動かさない電源再投入で角度不変、動かしてからの入れ直し（`session_214916.txt`）は次チャットで読む。`python` が 3.10 を指すようになり ver8 は `py -3.13`。「引き継ぐと言ったら即引き継ぎ書と文書更新」を絶対ルール2 に。`next_chat_briefing_motor.md`（夜版、コマンド解説つき）・`motor_can_findings.md`・`motor_bench_checklist.md`・`realsense_t265.md` を書き換え**
-- `chats/2026-09-17_exp04-stop4-review.md` ── **実験04 停止点4 の講評。H_gainDR はほぼ全指令で静止し除外。G_real_peak と H_eff13p5 は共通条件の不合格 3 対 3 の同点で、WRS の G 推しは事前の規則（同点ならトルクの低い方）と食い違う → Cowork は H_eff13p5 推奨（ゲインのずれは実機で測れば合わせられるがトルク側は消えない）、ユーザー決定は両方持っていく（実機は H_eff13p5 から）。damping ×2 はどれも不合格で Kd 分離は必須。速度途絶は 0 埋め 0.2 s・直前値保持 0.5 s まで転倒 0%。ユーザー判断でその場旋回を直しに行く → 実験05 の指示書（追記: 停止点5a で原因は指令の希少さ 0.38% と足上げ報酬の並進だけの判定、実験06 の指示書で旋回を直す学習2本とハングの切り分け）（T0 原因調べ: 足上げ報酬の指令判定・指令の組み合わせ・S6 の内訳／D デプロイ準備: H_eff13p5 の golden npz・P6-2・P6-1 のやり直し・H_gainDR の学習ログ）**
-- `chats/2026-09-17_motor-summary-handover.md` ── **実機側のまとめと引き継ぎ準備。学習側の最新（実験04 停止点1〜3、H_nolinvel 不採用、候補3本、damping ×2 不合格）と実機の実測（ver8）を突き合わせ、デプロイまでの実機側の最低限を M1〜M9（全モーターの表 → Kd 分離 → AK10-9 換算・ゲイン上限 → 原点姿勢 → T265 → 制御ループ ver9 乾式テスト → 段階的に動かす → 電源系）に整理。`next_chat_briefing_motor.md` を新設**
-- `chats/2026-09-17_exp04-stop1-review.md` ── **実験04 停止点1 の講評。G_real_peak は Kt 0.7 倍想定（effort 12 / 13.5）・遅延・摩擦・質量・ノイズ・吊り下ろしで合格、damping ×0.5 / ×2 と stiffness ×0.7（2400）で不合格。推奨: 候補は G_real_peak（暫定 2999）、H_nolinvel が新しい不合格を出さなければ速度なしを第一候補。Cowork の2本目選択規則の誤り（effort 9.0 は定格で Kt 想定ではない）を訂正、左右 4 cm のずれは base 原点の横ずれで全部説明できる、足裏 −40° はリンク座標系の姿勢かもしれない。実機側は Kd の分離（c_d 0.55 / 0.71 / 1.19 → 実効 damping ×1.0〜×2.2）を最優先に、Kt を後回しに組み替え。追加指示 `wrs_experiment04_followup_instruction.md`（P5・停止点3、条件9 の数値不安定の確認、速度への依存、golden npz、H_gainDR）**
-- `chats/2026-09-16_motor-ver7-official-docs.md` ── **公式資料を再調査し `motor_mit_official_notes.md` を新設、`motor_console_ver7.py` / `ver8.py` と練習用 `mit_sim.py` を作成。実機（ID34・脚付き）で: 電流の符号が信用できない（ver7 の morg 等が全滅 → ver8 は大きさだけ）、MIT 位置＝サーボ角（`o 0` で両方0）、電源再投入で 80 deg の窓に折り返す、実効Kp/指令Kp 0.538、c_d×r_v 0.55、指令途絶でトルクを出し続ける、遅れ最小 8 ms、C6 リミットサイクルなし、ステップは静止摩擦の不感帯で止まる。上位機の ID 番号は16進（12番＝ID18 真ん中、22番＝ID34 先端）、5個中3個がバスに出ない。ver6 の速度0欄の半LSB バイアスを dither で修正。`motor_can_findings.md`・`motor_bench_checklist.md` を書き換え**
-- `chats/2026-09-16_exp03-criteria-and-turning.md` ── **（深夜の追記: 実験03 完了、G_real_peak をデプロイ候補と判断、実験04 の指示書と次チャットへの指示書（深夜版）を作成）（夜の追記: B は S7/S8 で小旋回合格と判明し訂正、train.py の h5py DLL エラーの切り分け指示）実験02 停止点2を受けて実験03 の指示書を改訂。ユーザー決定: トルク基準「S1 で RMS ≤ 定格・最大 ≤ ピーク」、旋回は小旋回で可。Cowork 指摘: シムでは最大は自動で守られる（飽和率・computed torque で見る）、向き保持に小さな yaw 追従は必須で B/E は未達（S7/S8 追加）、world 版報酬への差し替え案は平地では根拠が弱い（先に指令分布・罰の比を実測）。1024 env × 6 本は VRAM に入らず GPU も飽和、比較は 4096 × 2本**
-- `chats/2026-09-16_goal-flat-real-actuator.md` ── **ゴールを平地に変更（坂は後回し）。旧アクチュエータ（AK80 に 20〜30 N·m）の方策は使わず、実機準拠アクチュエータで一から学習し直す実験03（G_real_peak / G_real_rated）とデプロイ準備（ONNX・観測契約・B のトルク実態・立てない件の診断）の WRS 指示書、次の Cowork チャットへの指示書を作成。P3a: stiffness 4倍でも前に倒れる＝沈み仮説は外れ。F_BtoRough は terrain_levels 4.2 まで上昇**
-- `chats/2026-09-16_deploy-readiness-and-goal-design.md` ── **複合版B（平地歩行）を踏まえ、最低限デプロイに何が要るかを整理（ONNXエクスポート未検証・観測契約未作成・MIT原点未達・アクチュエータグループ不一致・実機フルアセンブリ状況不明）。学習時のランダム指令はデプロイ時に固定値/外部入力へ差し替える方針を確認。ゴール設計として、アクチュエータ設定を実機準拠に直した上での平地前進（+旋回要否は要検討）限定歩行を提案**
-- `chats/2026-09-16_experiment02-stop1.md` ── **C_flatonly が iter 2400 で歩き出し、立ち往生の分かれ目は地形と判明（実験01の切り分け結論を撤回）。旋回指令が rel_heading_envs=1.0 で出ていなかった件、action 0 で前に倒れる件（剛性不足の疑い）。P3 を E_yawcmd と F_BtoRough に差し替え、D 系は中止**
-- `chats/2026-09-16_experiment01-results.md` ── **実験01の結果の読み取り。A 立ち往生・B 合格・切り分けは iter1000 単発。error_vel はエピソード長に比例（正規化）、max_init_terrain_level を上げると難しくなる、旧 feet_air_time はこの機体の歩調だと毎歩マイナス、を訂正・指摘。実験02の指示書**
-- `chats/2026-09-16_crab-standstill-experiment01.md` ── **カニ歩き・立ち往生の対策案を全列挙し、実験01（A: 08-21＋log std と B: ＋平地＋dense 足上げ＋std 0.35 の並走、iter 1600 で固定評価）を設計。ユーザー案「全部入り→切り分け」に対照 A・直す系限定・系統 leave-one-out・事前の判定基準を追加。指令を絞る案は立ち止まりの給料を 0.24→0.55 にする**
-- `chats/2026-09-15_wrs-training-strategy.md` ── **再エクスポート後の学習方針を相談し `wrs_training_strategy.md` を新設。Kp/Kd は速さのつまみではない、heading 固定はやめる提案、プロジェクト指示の縮小提案**
-- `chats/2026-09-15_wrs-reexport-instruction.md` ── **再エクスポートを WRS機で完遂し、handbook / handover / 学習戦略を書き換え、次の学習チャット（Cowork・WRS 両方）への指示書を作成。指示書の Windows 化、base の +X が横だった件（過去のカニ歩きの有力説明）、関節軸の符号の食い違いと修正、HAA=0・スポーン高さ、URDF インポーター 2.4.31 問題（キャッシュからコピーで解決）、テスト起動完走**
-- `chats/2026-09-15_github-push-gap.md` ── **GitHub の main が 08-21 で止まっていた（以降 push 漏れ）ことの記録。「毎回 chats に追加」ルールの追加**
-- `chats/2026-09-14_alienware-failure-and-machine-move.md` ── **Alienware の故障切り分けと、WRS機への移設決定。「熱依存」モデルの棄却、ドライバ説の見立ての更新、遠隔アクセスの教訓**
-- `chats/2026-09-14_mit-mode-and-position-control.md` ── **MIT がモード8で確定。ゲインの量子化。`morg` の実装。位置制御はまだ未達**
-- `chats/2026-09-14_onshape-instance-order-fix.md` ── 木構造の非対称の真因はインスタンス並び順だった
-- `chats/2026-09-07_motor-bench-and-mit.md` ── AK80-9 のベンチ実測（friction / armature）と MIT モードの検討
-- `chats/2026-09-06_mass-and-joint-limit-fix.md` ── 質量再計算（密度逆算）と関節リミットのSkyentific値反映、USD再構築
- 
