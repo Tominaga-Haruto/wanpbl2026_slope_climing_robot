@@ -199,6 +199,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- chats/2026-09-18_controller-pad-probe-implementation.md ── Connect2USB2CAN/controller/pad_probe.py を追加。Switch 2 Pro を50 Hzで乾式読取し、CSV・タイムアウト零指令を実装。CAN/ONNX/モーターには未接続。
 - `controller_next_chat_briefing.md` ── **Jetson上のSwitch 2 Proの次チャット用。実測済みの入力対応、左スティックだけの50 Hz乾式 `pad_probe.py`、切断テスト、禁止事項をまとめた。**
 - `chats/2026-09-18_jetson-switch2-controller-checklist.md` ── **Jetson に有線接続した Switch 2 Pro の乾式テスト手順。認識・生値・50 Hz・切断・非常停止を、モーター/CAN/方策へ接続せずに確認する。**
 - `controller_gpu_today_instruction.md` ── **2026-09-18 の実行順をまとめた指示書。Switch 2 Pro の有線認識・乾式入力確認、WRS GPU の夜間結果判定、deploy package の検品とノートPCへの受け渡し。モーターは動かさない。**
