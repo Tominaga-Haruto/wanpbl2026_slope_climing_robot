@@ -13,7 +13,7 @@
 1. `claude/README.md` → **この文書** → `claude/chats/2026-09-17_motor-kd-separation-t265.md`（前チャットの記録）。
 2. **この時点のユーザー確定事項:** 全10台の ID・機種・関節対応・「時計回り＝正方向」はユーザーが設定済み。M1を再実験しない。M2（Kd分離）とM3（AK10-9のKp換算）は代表モーターで完了済み。
 3. **今の優先タスクはコントローラーとGPU側。** `claude/controller_gpu_today_instruction.md` の A1（Switch 2 Proの有線認識）と B1（WRSの朝報告確認）から始める。ここではモーターを動かさない。
-4. 実機側の次の未解決は、Kt測定（M3b: 重り・アーム・固定治具待ち）、T265の実機固定（M6）、方策パッケージ受領後のver9乾式実装（M7）。AK10-9の再投入試験は、脚を外して固定姿勢を作れるときだけ行う。 
+4. 実機側の次の未解決は、Kt測定（M3b: 重り・アーム・固定治具待ち）、T265の実機固定（M6）、方策パッケージ受領後のver9乾式実装（M7）。AK10-9の再投入試験は、脚を外して固定姿勢を作れるときだけ行う。
 5. 数値が必要なら `claude/motor_can_findings.md`（実測の正本）、`claude/motor_bench_checklist.md`（索引）、`claude/realsense_t265.md`、`claude/robot_model_conventions.md` を読む。
 
 **古い文書（信じない）:** `mit_implementation_briefing.md`（ver6 前提）、`actuator_params.md` §0c（「実効Kd 0.48」「Kp 0.538 未分離」）、`project_handbook.md` A7（「MIT は未検証」）。
