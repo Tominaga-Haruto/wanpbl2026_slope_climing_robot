@@ -12,12 +12,12 @@
 
 - 目標は平地での実機デプロイ。直進の第一候補は `H_eff13p5@2999`、予備は `G_real_peak@2999`。
 - 旋回の追加学習は打ち切り。`N_w1_seed2` は合格点ゼロ、`N_w1p5` は4400だけ合格で、連続300 iterという採用条件を満たさない。
-- `P_gainDR_narrow` は `H_eff13p5@2999` から、stiffness x0.85〜1.15・damping x0.8〜1.25 をランダム化して再開した直進頑健化ラン。P1は **4498/4499まで完走**した。
+- `P_gainDR_narrow` は `H_eff13p5@2999` から、stiffness x0.85〜1.15・damping x0.8〜1.25 をランダム化して再開した直進頑健化ラン。P1は **4498/4499まで完走**した。実runは `2026-09-18_21-32-01_P_gainDR_narrow_foreground`。
 - P1最終ログ: Mean reward 18.86、mean episode length 982.53、timeout 94.42%、base contact 4.71%、bad orientation 1.00%、action std 0.27、NaN/発散なし。これは学習プロセスが正常というだけで、候補昇格の根拠にはならない。
 
 ## 最初にすること
 
-WRS機で次を実行して、出力をこのチャットへ貼ってもらう。これはフォアグラウンドの確認だけで、学習は起動しない。
+WRS機で次を実行する。これはフォアグラウンドの確認だけで、学習は起動しない。
 
 ```powershell
 cd D:\Tominaga\IsaacLab
@@ -28,7 +28,16 @@ Get-Content .\tools\runs\_eval.ps1
 Get-Content .\tools\runs\_train_foreground.ps1
 ```
 
-`P_gainDR_narrow` の実runフォルダと、`model_3600.pt`、`model_4000.pt`、`model_4498.pt` の実在を確認する。**スクリプトの実引数を確認せず、推測した評価コマンドを出さない。**
+`P_gainDR_narrow` の `model_3600.pt`、`model_4000.pt`、`model_4498.pt` の実在を確認する。評価コマンドは既存スクリプトの実引数から完成形を作る。
+
+## すぐ再生するP1@4498
+
+WRS機のPowerShellで、次をフォアグラウンド実行する。通常表示用であり、終了は `Ctrl+C`。PowerShellを閉じない。
+
+```powershell
+cd D:\Tominaga\IsaacLab
+.\tools\runs\_play.ps1 --task Velocity-Rough-Skyentific-Poclegs-v0 --num_envs 16 --load_run 2026-09-18_21-32-01_P_gainDR_narrow_foreground --checkpoint model_4498.pt env.commands.base_velocity.debug_vis=false
+```
 
 ## まず行う3時間枠: P1の評価だけ
 
