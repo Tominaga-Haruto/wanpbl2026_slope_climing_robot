@@ -199,6 +199,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- `controller_gpu_today_instruction.md` ── **2026-09-18 の実行順をまとめた指示書。Switch 2 Pro の有線認識・乾式入力確認、WRS GPU の夜間結果判定、deploy package の検品とノートPCへの受け渡し。モーターは動かさない。**
 - `chats/2026-09-18_motor-debugging-6.md` ── **motor debugging #6。ID18（AK10-9）の `session_214916.txt` を判定: 動かした後の電源再投入で座標変化はあるが、操作時刻と物理角がログになく、原点窓の幅・再現則は未判定。固定姿勢で3回の再試験へ。全台で必要なのはまず ID・機種・関節・符号の M1 で、重い校正は機種代表と疑義のある個体に限定。Connect2USB2CAN は独立リポジトリとして維持。**
 - `chats/2026-09-18_overnight-and-controller.md` ── **実験09 の中間（合格は L_angstd_w1 の 4000・4200 だけで幅 200 iter、@4000 は stiffness ×0.7 で全シナリオ転倒＝旋回は候補にならず）を受けて、WRS の新チャット（Opus）に夜間の自走の指示: 仮デプロイ用パッケージ（H_eff13p5@2999 第一・G_real_peak@2999 予備・L_angstd_w1@4000 実験用）、学習3本（N_w1_seed2 / N_w1p5 / まっすぐの改良 P_gainDR_narrow）、事前の判断規則の2巡目、許した手直し5種類、09:45 に再生コマンド。コントローラー（Switch 2 Pro）準備チャットの指示書 `controller_prep_briefing.md`**
 - `chats/2026-09-17_exp08-stop8b-review.md` ── **実験08 停止点8b の講評。L_angstd（std 0.35・weight 0.5）は全不合格、L_angstd_w1（weight 1.0）は @4000 だけ合格（S6 +0.268 / S9 −0.353）で @3600・@4498 は左右の釣り合いが崩れて不合格 → 効いたのは weight 1.0、1点の合格ではデプロイ候補にしない。直進の候補は H_eff13p5@2999 のまま。実験09 の指示書（密な評価 256 env × 2回、関節トルク RMS の実装、@4000 の頑健性スイープ、N_w1_seed2 / N_w1p5、事前の判定規則「連続 300 iter の合格範囲」）。push コマンドを提示。`next_chat_briefing.md` を深夜版に**
