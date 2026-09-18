@@ -199,6 +199,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- `controller_next_chat_briefing.md` ── **Jetson上のSwitch 2 Proの次チャット用。実測済みの入力対応、左スティックだけの50 Hz乾式 `pad_probe.py`、切断テスト、禁止事項をまとめた。**
 - `chats/2026-09-18_jetson-switch2-controller-checklist.md` ── **Jetson に有線接続した Switch 2 Pro の乾式テスト手順。認識・生値・50 Hz・切断・非常停止を、モーター/CAN/方策へ接続せずに確認する。**
 - `controller_gpu_today_instruction.md` ── **2026-09-18 の実行順をまとめた指示書。Switch 2 Pro の有線認識・乾式入力確認、WRS GPU の夜間結果判定、deploy package の検品とノートPCへの受け渡し。モーターは動かさない。**
 - `chats/2026-09-18_motor-debugging-6.md` ── **motor debugging #6。ID18（AK10-9）の `session_214916.txt` を判定: 動かした後の電源再投入で座標変化はあるが、操作時刻と物理角がログになく、原点窓の幅・再現則は未判定。全10台のID・機種・関節・正方向はユーザー設定済みのためM1の再実験は省略。Ktは治具待ちで、コントローラーとGPU成果物へ切り替え。Connect2USB2CAN は独立リポジトリとして維持。**

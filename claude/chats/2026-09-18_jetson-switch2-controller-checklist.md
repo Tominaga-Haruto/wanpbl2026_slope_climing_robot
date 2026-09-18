@@ -13,5 +13,6 @@
 - 読み取りのみ。既存の未整理変更には触れていない。
 
 ## 積み残し・次にやること
-- Jetson 側の USB 認識結果と `/dev/input` の対応を取得する。
-- 軸・ボタン番号を実測後、読み取り専用の `controller/pad_probe.py` を作る。
+- Jetson 側の USB 認識結果と `/dev/input` の対応を取得した。`045e:028e` / `Microsoft X-Box 360 pad`、安定パスは `usb-045e_XBOX_360_For_Windows_000000000001-event-joystick`。
+- 左スティックは `ABS_X` (0) / `ABS_Y` (1)、A は `BTN_SOUTH` (304)、Y は `BTN_WEST` (308)。仮デプロイは左スティックの並進だけに絞る。
+- 次チャットで、読み取り専用の `controller/pad_probe.py` を作る。Jetson上の配置・Python環境・切断時の挙動を確認してからにする。

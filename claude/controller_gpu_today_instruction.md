@@ -6,21 +6,20 @@
 
 ## 完了条件
 
-1. Switch 2 Pro がノートPCで認識され、モーターなしで軸・ボタンの生値を記録できる。
+1. Switch 2 Pro がJetsonで認識され、モーターなしで軸・ボタンの生値を記録できる（完了）。
 2. GPU側で今日の仮デプロイ候補を、事前規則どおり決める。
 3. 候補ごとに ONNX、golden npz、観測契約、アクチュエータ表、SHA256 がそろっていることを確認する。
-4. ノートPCへ運ぶファイルと、実機側へ渡す数値が明確になっている。
+4. Jetsonへ運ぶファイルと、実機側へ渡す数値が明確になっている。
 
-## A. ノートPC: Switch 2 Pro の乾式準備
+## A. Jetson: Switch 2 Pro の乾式準備
 
-### A1. まず認識だけ確認する（コード・モーターなし）
+### A1. 認識確認（完了、コード・モーターなし）
 
-1. Switch 2 Pro を USB-C 有線でノートPCへつなぐ。今日は Bluetooth を使わない。
-2. `Win + R` を押し、`joy.cpl` と入力して Enter。
-3. 一覧にコントローラーが出るか確認し、対象を選んで「プロパティ」を開く。
-4. 左右スティック・トリガー・ZR/ZL・+/-を押し、どの軸／ボタンが反応するか記録する。
+1. Switch 2 Pro を USB-C 有線でJetsonへつなぐ。Bluetooth は使わない。
+2. `evtest` で `Microsoft X-Box 360 pad`（`event2`）を確認した。
+3. 左スティック、A / Y、十字キー、ZL / ZR、L / R、HOMEの番号を記録した。
 
-記録するもの: 表示名、USB有線で認識したか、各スティックの中立値、ZR/ZL、+、- が反応した番号。認識しない場合は、Steamを起動して Steam Input を有効にした状態で同じ確認をする。
+実装で使う入力は、現時点では左スティック（`ABS_X` / `ABS_Y`）だけである。直進仮デプロイに旋回は混ぜない。詳細は `controller_prep_briefing.md` と `controller_next_chat_briefing.md` を正本とする。
 
 ### A2. 読み取り実装を始める条件
 
@@ -82,7 +81,7 @@ Get-FileHash D:\Tominaga\deploy_pkg\20260918\deploy_pkg_20260918.zip -Algorithm 
 - 関節グループ別 stiffness / damping / effort
 - SHA256
 
-ONNX・npz・zipは Git に入れない。ノートPCへは USB または安全な共有手段でコピーする。
+ONNX・npz・zipは Git に入れない。Jetsonへは USB または安全な共有手段でコピーする。
 
 ### B4. GPUで確認すること
 
@@ -92,7 +91,7 @@ ONNX・npz・zipは Git に入れない。ノートPCへは USB または安全�
 
 ## C. 実機側への受け渡し
 
-GPU側の検品が終わったら、ノートPCの `C:\Users\harut\Connect2USB2CAN\policy\` に候補パッケージを置く。実機制御ループの実装開始には、候補名と次の5点が必要。
+GPU側の検品が終わったら、Jetson上の方策配置先を確認してから候補パッケージを置く。実機制御ループの実装開始には、候補名と次の5点が必要。
 
 1. ONNX
 2. golden npz
