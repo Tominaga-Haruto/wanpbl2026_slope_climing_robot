@@ -29,7 +29,7 @@
 1. **`project_handbook.md`** ── 最優先・毎回読む。プロジェクトの前提・鉄則・現在地・環境・手順のすべて。PART A（毎回見る）と PART B（必要な作業のとき見る）の2部構成。
 2. **`handover.md`** ── 2番目に読む。「今どこにいて、次に何をすればいいか」を15分で掴むための引き継ぎ書。セッションをまたいだ経緯・決定事項・詰まったときの入口はここ。
 3. **次チャットへの指示書（担当で分かれている）:**
-   - **学習側（WRS機）:** **`next_chat_briefing.md`（2026-09-18 朝版。最初に WRS の `MORNING_0945.md` を受け取り、今日の仮デプロイの方策を決める）。これだけで始められる。** WRS は 09-18 夜間に `wrs_overnight_20260918_instruction.md` を実行中（朝 09:45 に `MORNING_0945.md`）。
+   - **学習側（WRS機）:** **`next_chat_briefing.md`（2026-09-18 P1@4498後版。WRS側Claude Codeは使わず、ユーザーがPowerShellで直接、P1の評価→固定規則による夜間学習判断を行う）。これだけで始められる。**
    - **コントローラー（Switch 2 Pro コントローラー → 速度指令）:** **`controller_prep_briefing.md`（2026-09-18）。**
    - **実機側（ノートPC・モーター・T265・デプロイ用の制御ループ）:** **`next_chat_briefing_motor.md`（2026-09-17 夜版）。** 状況の整理（やってきたこと・できるようになったこと・ゲイン換算・T265）、M1〜M9 の状態、次の一手（最初は `session_214916.txt` を読む）、コマンド解説、やり残し。
 4. 必要になった時だけ、下記の個別資料や `chats/` の過去ログを読む。
@@ -200,6 +200,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- chats/2026-09-18_p1-4498-next-run-decision.md ── P_gainDR_narrow@4498 の正常な学習統計を確認。3時間枠は評価を先行し、その結果で P2_seed2 / P2_stiffonly / 学習停止を固定規則により選ぶ。
 - chats/2026-09-18_deployment-roadmap-and-fixture-status.md ── 学習から平地デプロイまでの依存関係を deployment_roadmap.md に集約し、Kt測定用の固定治具が無いことを実機文書へ反映。
 - chats/2026-09-18_controller-pad-probe-implementation.md ── Connect2USB2CAN/controller/pad_probe.py を追加。Switch 2 Pro を50 Hzで乾式読取し、CSV・タイムアウト零指令を実装。CAN/ONNX/モーターには未接続。
 - `controller_next_chat_briefing.md` ── **Jetson上のSwitch 2 Proの次チャット用。実測済みの入力対応、左スティックだけの50 Hz乾式 `pad_probe.py`、切断テスト、禁止事項をまとめた。**
