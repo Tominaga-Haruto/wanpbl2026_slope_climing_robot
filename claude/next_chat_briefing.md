@@ -39,15 +39,36 @@ cd D:\Tominaga\IsaacLab
 .\tools\runs\_play.ps1 --task Velocity-Rough-Skyentific-Poclegs-v0 --num_envs 16 --load_run 2026-09-18_21-32-01_P_gainDR_narrow_foreground --checkpoint model_4498.pt env.commands.base_velocity.debug_vis=false
 ```
 
-## まず行う3時間枠: P1の評価だけ
+## 実行中の3時間枠: 直進頑健化の2本比較
 
-新規学習は起動しない。最大2本の評価を並列にしてよいが、両方とも表示したPowerShellを閉じず、フォアグラウンドのままにする。
+P1@4498の評価前に、次の統制された2本を並列で+2700 iter実行する。P1と同じ狭い剛性・damping DRのseed再現性と、damping DRを外したstiffness-onlyを比べるためである。両方とも表示したPowerShellを閉じず、フォアグラウンドのままにする。
+
+1. `P2_gainDR_seed2`: stiffness x0.85〜1.15、damping x0.8〜1.25、seed 2。
+2. `P3_stiffonly`: stiffness x0.85〜1.15、damping x1.0固定、seed 1。
+
+両方とも `H_eff13p5@2999` から+2700 iter。旋回に関する変更は入れない。3時間後の次チャットは、両runとP1@4498を評価して、P1/P2/P3のいずれかを候補にするかHへ戻すかを決めるところから始める。
+
+WRS機でPowerShellを2枚開き、それぞれ次を実行する。両方ともフォアグラウンドであり、PowerShellを閉じない。
+
+```powershell
+cd D:\Tominaga\IsaacLab
+.\tools\runs\_train_foreground.ps1 --task Velocity-Rough-Skyentific-Poclegs-v0 --num_envs 4096 --max_iterations 2700 --headless --seed 2 --run_name P2_gainDR_seed2 --resume --load_run 2026-09-17_00-08-51_H_eff13p5 --checkpoint model_2999.pt agent.policy.noise_std_type=log env.events.randomize_actuator_gains.params.stiffness_distribution_params=[0.85,1.15] env.events.randomize_actuator_gains.params.damping_distribution_params=[0.8,1.25]
+```
+
+```powershell
+cd D:\Tominaga\IsaacLab
+.\tools\runs\_train_foreground.ps1 --task Velocity-Rough-Skyentific-Poclegs-v0 --num_envs 4096 --max_iterations 2700 --headless --seed 1 --run_name P3_stiffonly --resume --load_run 2026-09-17_00-08-51_H_eff13p5 --checkpoint model_2999.pt agent.policy.noise_std_type=log env.events.randomize_actuator_gains.params.stiffness_distribution_params=[0.85,1.15] env.events.randomize_actuator_gains.params.damping_distribution_params=[1.0,1.0]
+```
+
+起動直後に `Loading model checkpoint` と iteration 3000付近を両画面で確認する。いずれかが想定外のHydra keyエラーを出したら、何も書き換えずに止め、エラー全文ではなく最後の20行を次チャットへ渡す。
+
+## 次チャットで行う評価
 
 1. `model_3600.pt`、`model_4000.pt`、`model_4498.pt` 各々で、平地S1〜S11・64 env・関節別トルクを評価する。
 2. `model_4498.pt` で、c01/c03/c04/c06/c07/c08/c09/c10/c16 と、base_lin_velの0埋め0.2 s・直前値保持0.5 sを評価する。
 3. H_eff13p5@2999 の既存表と並べる。必ず出す数値はS1の前進速度・静止率・転倒率・S7/S8・関節RMS/最大/飽和率、c06の転倒率、Hに無い不合格。
 
-評価の実行には `tools\\runs\\_eval.ps1` の既存の実引数を使う。評価の起動前に、次チャットの担当者が上の `Get-Content` 出力から完成形を組み立てること。実装や報酬・地形・アクチュエータ設定を修正しない。
+評価の実行には `tools\\runs\\_eval.ps1` の既存の実引数を使う。実装や報酬・地形・アクチュエータ設定を修正しない。
 
 ## 評価後の夜間学習: 固定した分岐
 
