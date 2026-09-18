@@ -98,6 +98,7 @@
 ### 今アクティブな指示書
 
 | ファイル | 内容 | いつ読む |
+| deployment_roadmap.md | **平地デプロイまでの全体工程。学習パッケージ、コントローラー、実機設定、ver9乾式、段階的な実機試験の依存関係と完了条件** | 全体の残タスクを確認するとき |
 |---|---|---|
 | **`wrs_overnight_20260918_instruction.md`** | **WRS機 Claude Code の新チャット（Opus）に貼る夜間の自走の指示（2026-09-18 01:00〜09:45）。** 仮デプロイ用パッケージ、学習3本（N_w1_seed2 / N_w1p5 / P_gainDR_narrow）、事前の判断規則による2巡目、30 分ごとの見回りと許した手直し5種類、09:30 の報告と 09:45 の再生コマンド | **今（実行中）** |
 | **`controller_prep_briefing.md`** | **コントローラー準備チャットへの指示書（2026-09-18）。** 方策の指令の前提、Switch 2 Pro コントローラーの PC 対応（要実測）、認識確認 → pad_probe → 割り当て → teleop（デッドマン・非常停止・途絶・変化の制限）→ 乾式テスト → ver9 への渡し方 | **コントローラーのチャットの最初** |
@@ -199,6 +200,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- chats/2026-09-18_deployment-roadmap-and-fixture-status.md ── 学習から平地デプロイまでの依存関係を deployment_roadmap.md に集約し、Kt測定用の固定治具が無いことを実機文書へ反映。
 - chats/2026-09-18_controller-pad-probe-implementation.md ── Connect2USB2CAN/controller/pad_probe.py を追加。Switch 2 Pro を50 Hzで乾式読取し、CSV・タイムアウト零指令を実装。CAN/ONNX/モーターには未接続。
 - `controller_next_chat_briefing.md` ── **Jetson上のSwitch 2 Proの次チャット用。実測済みの入力対応、左スティックだけの50 Hz乾式 `pad_probe.py`、切断テスト、禁止事項をまとめた。**
 - `chats/2026-09-18_jetson-switch2-controller-checklist.md` ── **Jetson に有線接続した Switch 2 Pro の乾式テスト手順。認識・生値・50 Hz・切断・非常停止を、モーター/CAN/方策へ接続せずに確認する。**

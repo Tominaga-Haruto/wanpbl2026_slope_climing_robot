@@ -37,6 +37,12 @@
 - 出典: https://windowsforum.com/news/switch-2-pro-controller-usb-works-wireless-needs-drivers.442915/ 、https://www.techradar.com/gaming/the-nintendo-switch-2-pro-controller-is-now-supported-on-steam 、https://www.pcgamer.com/how-to-use-a-nintendo-switch-pro-controller-on-pc/
 
 ## 5. 進め方（この順。1段ずつユーザーの実測で確かめる）
+
+### 実装状況（2026-09-18）
+
+- Connect2USB2CAN の feat/mit-mode に pad_probe.py を追加済み（commit fab6eff）。左スティックを安定パスから50 Hzで読み、CSVと画面へ生値・正規化値・状態を出す。CAN、ONNX、モーターは使わない。
+- Jetson上での実行、50 Hz周期、中立・最大値、USB抜線は未試験である。evdevが無い場合は導入方針を先に決める。
+- この部品は teleop.py の代わりではない。デッドマン、非常停止ラッチ、変化率制限、ver9への受け渡しは次段階である。
 1. **認識の確認（完了）:** Jetson で USB 有線認識と `evtest` による生値確認が済んだ。Windows / Steam の手順は今回の経路には使わない。
 2. **読み取りの確認スクリプト `controller\\pad_probe.py`:** 使う経路（SDL / XInput / HID）で、全部の軸とボタンの生の値を 50 Hz で表示し、ログに残す。スティックの中立のずれ（デッドゾーンの決め方）、最大値、更新周期の揺れ、抜き差ししたときの挙動を実測する。パッケージを入れる場合は、どの Python に何を入れるかを先にユーザーに確認する。
 3. **割り当ての決定（更新）:** 仮デプロイは左スティックだけで `(vx, vy, 0)` を出す。A / Y による時計・反時計回りの旋回は、直進方策には混ぜず将来の旋回方策の乾式試験まで保留する。左スティックを離したら指令は必ず `(0, 0, 0)`。非常停止はコントローラーの未使用ボタンに依存せず、物理的なモーター電源遮断を手元に置く。

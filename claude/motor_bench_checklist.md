@@ -84,6 +84,8 @@
 - [x] E8 **確定** 学習の制御周期 50 Hz。
 
 ### F 環境・運用
+
+**Kt測定の前提（2026-09-18 ユーザー確認）:** 固定治具は現時点で無い。重り・アーム・固定治具を製作または確保するまでF5bは保留し、脚付き全身では測らない。
 - [x] F1 実機コードは GitHub `mrgt-hakuto/Connect2USB2CAN`、ブランチ `feat/mit-mode`。
 - [ ] F1c **すぐやる** 未コミット: ver6〜ver8・`mit_sim.py`・`.bak_*`・`logs\\`・`mit_calib.json`・`t265\\`。`.venv310\\` は `.gitignore` へ。
 - [x] F2a IMU/姿勢センサは RealSense T265。
