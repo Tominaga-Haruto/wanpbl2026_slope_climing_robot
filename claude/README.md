@@ -202,9 +202,9 @@
 - **`project_handbook.md` / `handover.md` に書く:** 今後ずっと有効な事実・手順・現在地。
 - **`chats/` に書く:** その結論に至った経緯・具体的なやり取り・当時の判断理由。
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
-- chats/2026-09-19_m7-onnx-golden-dry-run.md ── M7完了。H golden 500観測をCANなしでONNX再生し、SHA256 6/6・action最大 `1.1920929e-06`・目標角最大 `5.96046448e-07`（各≤`1e-4`）と50 Hz CSVを確認。CAN統合は未着手。
 
 ### 索引（新しい順）
+- chats/2026-09-19_m7-onnx-golden-dry-run.md ── M7完了。H golden 500観測をCANなしでONNX再生し、SHA256 6/6・action最大 `1.1920929e-06`・目標角最大 `5.96046448e-07`（各≤`1e-4`）と50 Hz CSVを確認。CAN統合は未着手。
 - chats/2026-09-19_h-deployment-next-step-guide.md ── D1成果物のSHA256を再確認。M4は2機種実測が済んでいるため独立タスクにせず、M7のCANなしgolden再生・ONNX乾式ループと、固定コマンドを残すD5の左スティック対応を別チャットへ分離した。
 - chats/2026-09-19_h-deployment-package-received.md ── H_eff13p5@2999のデプロイ成果物をノートPCでSHA256照合し、全6必須ファイルの一致とONNX 42入力・10出力／Torch照合PASSを確認。次はCANなしのM4ゲイン表とM7乾式実装。
 - chats/2026-09-19_wrs-export-handoff-and-avast.md ── WRS cloneにD1文書が無いことを確認し、H成果物の自己完結抽出プロンプトを引き継ぎ書に作成。Codex接続を阻害するAvast HTTPSスキャンはRepair→再起動→hardware network accelerationの順で復旧する方針。
