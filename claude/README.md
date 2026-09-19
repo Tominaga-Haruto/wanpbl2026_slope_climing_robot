@@ -201,7 +201,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
-- chats/2026-09-19_motor-console-ver8-2-dual-test.md ── ID0x22（AK80-9）とID0x12（AK10-9）の二機同時MIT試験用に、ver8派生の `motor_console_ver8_2.py` を追加。50 Hz送信、個別監視、零MIT指令による終了、実験手順と中止条件を固定した。実機未実行。
+- chats/2026-09-19_motor-console-ver8-2-dual-test.md ── ID0x22（AK80-9）とID0x12（AK10-9）の二機同時MIT試験用に、ver8派生の `motor_console_ver8_2.py` を追加。二機ゼロ保持100周期、同時実動、個別の電流・速度・移動量中止と両軸零MIT指令を実機で確認。10台＋推論のD3は未。
 - chats/2026-09-19_controller-required-hardware-test.md ── プロコン系で今日必須の実機試験を、Jetson＋有線Switch 2 Proだけの50 Hz乾式入力・切断試験に限定した。`obs_contract.md` 未受領は base 座標へのvx/vy符号確定だけを阻害し、入力試験自体は妨げないと整理した。
 - chats/2026-09-19_isaaclab-debugging-10-close-next11.md ── Isaac Lab debugging #10を閉じ、WRS側Codexの利用開始、P2/P3のrough地形逸脱、既存cloneの同期方針、平地F1/T1並列学習を#11の指示書に確定した。
 - chats/2026-09-19_isaaclab-debugging-10-p2-p3-training-review.md ── Isaac Lab debugging #10。P2（狭い stiffness+damping DR、seed 2）とP3（stiffness-only、seed 1）はともに11998まで正常完走。P3の最終報酬・episode長は高いが、カリキュラムとseedが異なるため学習ログだけでは優劣・頑健性を判定しない。通常再生後、既定の平地・頑健性評価でH_eff13p5@2999と比較する。
