@@ -194,6 +194,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- chats/2026-09-19_isaaclab-debugging-10-p2-p3-training-review.md ── Isaac Lab debugging #10。P2（狭い stiffness+damping DR、seed 2）とP3（stiffness-only、seed 1）はともに11998まで正常完走。P3の最終報酬・episode長は高いが、カリキュラムとseedが異なるため学習ログだけでは優劣・頑健性を判定しない。通常再生後、既定の平地・頑健性評価でH_eff13p5@2999と比較する。
 - chats/2026-09-18_p1-4498-next-run-decision.md ── P_gainDR_narrow@4498 の正常な学習統計を確認。3時間枠は評価を先行し、その結果で P2_seed2 / P2_stiffonly / 学習停止を固定規則により選ぶ。
 - chats/2026-09-18_deployment-roadmap-and-fixture-status.md ── 学習から平地デプロイまでの依存関係を deployment_roadmap.md に集約し、Kt測定用の固定治具が無いことを実機文書へ反映。
 - chats/2026-09-18_controller-pad-probe-implementation.md ── Connect2USB2CAN/controller/pad_probe.py を追加。Switch 2 Pro を50 Hzで乾式読取し、CSV・タイムアウト零指令を実装。CAN/ONNX/モーターには未接続。
