@@ -100,6 +100,8 @@
 | ファイル | 内容 | いつ読む |
 | deployment_roadmap.md | **平地デプロイまでの全体工程。学習パッケージ、コントローラー、実機設定、ver9乾式、段階的な実機試験の依存関係と完了条件** | 全体の残タスクを確認するとき |
 | `deployment_01_h_export_instruction.md` 〜 `deployment_06_h_integration_instruction.md` | Hを採用済みとした最短統合の分割指示書。D1（成果物抽出）→D2（ver9骨組み）とD3（T265）・D4（関節対応）→D6（H統合）。D5はプロコンを使う場合だけ行う。 | 分割したデプロイ用チャットを始めるとき |
+| `next_chat_d5_controller_mapping.md` | **D5専用。** 固定コマンドを残した左スティック→`(vx, vy, 0)`入力部品。単位・符号を推測せず、CAN/ONNX/T265へ接続しない。 | D5の新チャットを始めるとき |
+| `next_chat_m7_dry_loop.md` | **M7専用。** Hのgolden 500観測をONNXで再生し、action・目標角・50 Hz周期だけを照合するCAN不能な乾式実装。 | M7の新チャットを始めるとき |
 | `wrs_deployment_export_handoff.md` | **WRS cloneにD1文書が無い前提の自己完結した成果物抽出プロンプト、既知のH run、Avast HTTPS障害の復旧順、次の受け渡し** | WRSからHのデプロイ成果物を取り出すとき |
 |---|---|---|
 | `wrs_overnight_20260918_instruction.md` | WRS機 Claude Code に貼った夜間自走の指示。N_w1_seed2 / N_w1p5 と仮デプロイパッケージは完了したが、通知待機の失敗でP_gainDR_narrowと2巡目は未完了 | 経緯を確認するとき |
@@ -202,6 +204,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- chats/2026-09-19_h-deployment-next-step-guide.md ── D1成果物のSHA256を再確認。M4は2機種実測が済んでいるため独立タスクにせず、M7のCANなしgolden再生・ONNX乾式ループと、固定コマンドを残すD5の左スティック対応を別チャットへ分離した。
 - chats/2026-09-19_h-deployment-package-received.md ── H_eff13p5@2999のデプロイ成果物をノートPCでSHA256照合し、全6必須ファイルの一致とONNX 42入力・10出力／Torch照合PASSを確認。次はCANなしのM4ゲイン表とM7乾式実装。
 - chats/2026-09-19_wrs-export-handoff-and-avast.md ── WRS cloneにD1文書が無いことを確認し、H成果物の自己完結抽出プロンプトを引き継ぎ書に作成。Codex接続を阻害するAvast HTTPSスキャンはRepair→再起動→hardware network accelerationの順で復旧する方針。
 - chats/2026-09-19_deployment-05-priority-review.md ── D5の着手条件を確認。速度指令の符号・範囲はD1の`obs_contract.md`なしに推測できないため、既存Hのデプロイ成果物エクスポートを先行する。実機・CAN・コントローラーの状態変更はなし。
