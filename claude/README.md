@@ -37,6 +37,8 @@
 
 - **★★★★★★★★★★★★★★★★★ Isaac Lab debugging #11（2026-09-19）: WRS側Codexの利用を開始。P2/P3のrough地形逸脱を無効化し、平地をparamsで検証してから、F1（H@2999から狭いgain DR）とT1（Lの旋回設定＋純旋回比率0.35）の2本を4096 envで並列学習する。採用にはF1のc06≤5%・T1の連続300 iterを要求し、第三ランは勝手に起動しない。** → `next_chat_briefing.md`
 
+- **★★★★★★★★★★★★★★★★★ WRS側Git（2026-09-19）: `git fetch origin` はローカルCA不足のSSL証明書エラーで失敗。回避設定・二重cloneは使わず、WRS側Git同期を打ち切る。WRSは現作業ツリーを実行専用、GitHubの文書更新はノートPC側で行う。** → `project_handbook.md` A0、`next_chat_briefing.md`
+
 - **★★★★★★★★★★★★★★★★★ Isaac Lab debugging #10（2026-09-19）: P2_gainDR_seed2 / P3_stiffonly は11998まで正常完走したが、train 行に平地用 `sub_terrains` 上書きが無く、terrain curriculum は4.714 / 5.075まで上がった。よって両runは平地のgain DR比較として不成立で、H_eff13p5@2999の平地候補を置換する根拠に使わない。Play-v0でrough地形が見えたのは再生の誤りではなく、この逸脱を可視化したもの。WRS側Codexが利用可能になった。** → `chats/2026-09-19_isaaclab-debugging-10-p2-p3-training-review.md`
 
 - **★★★★★★★★★★★★★★★★★ 実機側（2026-09-17 夜）: 脚を外した ID34（AK80-9＝右足首 LR_FFE）と ID18（AK10-9＝右膝 LR_KFE）で Kd の分離が決着。c_p ≈ c_d（AK80-9 0.523 / 0.523、AK10-9 1.258 / 1.216）→ 機種別に割れば stiffness:damping 比が保てる（実効 damping ×1.0）。速度レンジは AK80-9 ±65・AK10-9 ±28 で確定、極対数 21 も確定。ゲインは機種によらず電流で出ていて、トルク指令の目盛りが機種で 2.3 倍違う → Kt（物理 N·m）の優先度が上がった。jit 合格（最大 23 ms）。T265 は Windows ノートPC（Python 3.10 の `.venv310`、pyrealsense2 2.53.1）で 200 Hz 取得でき、base 座標の符号と velocity の world 表現を確定。AK10-9 の電源再投入の結果（`logs\\v7_20260917\\session_214916.txt`）は次チャットで読む。ver8 は `py -3.13` で起動（`python` は 3.10 本体になった）。明日（09-18）残りのモーターを配線予定。** → **`next_chat_briefing_motor.md`（夜版）**、`chats/2026-09-17_motor-kd-separation-t265.md`

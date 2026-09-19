@@ -38,6 +38,8 @@
 
 **2026-09-19 の更新:** WRS機で Codex が利用可能になった。P2_gainDR_seed2 / P3_stiffonly は平地上書きなしでrough地形を学習したため、平地候補として無効。次の学習は、平地をrunの`params\\env.yaml`で確認した F1（直進gain DR）と T1（旋回）だけを並列で行う。具体的な一時指示は `next_chat_briefing.md`、恒久規約は本書A1/A5に従う。
 
+**WRS側Git（2026-09-19）:** `git fetch origin` はローカルCA不足のSSL証明書エラーで失敗する。WRS側では証明書回避・Git設定変更をせず、Git同期を打ち切る。WRSは既存作業ツリーでの実行専用、GitHubへの文書更新と履歴管理はノートPC側で行う。
+
 1. **★ 柱Aの実行環境は WRS共用PC（Windows 11 / RTX 3090 Ti）に移った。** 環境構築は 2026-09-15 に完了（`wrs_pc_environment.md`）。Alienware は 2026-09-13 から故障中で、柱Aはもう Alienware を待たない。
 2. **★ 機体を作り直した（2026-09-16、GitHub `main` の `6ede75b`）。** Onshape から再エクスポート → URDF 後処理 → USD → 64 env / 20 iter のテスト起動が完走。木構造 5/5・根＝胴体 2.918 kg・総質量 10.1058 kg。
 3. **★★ 再エクスポートの途中で、過去の学習を根本から疑わせる事実が2つ見つかった（B2・`robot_model_conventions.md`）:**
