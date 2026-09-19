@@ -89,7 +89,7 @@
 - **柱B（Windows ノートPC、`C:\\\\Users\\\\harut\\\\Connect2USB2CAN`）: 現行は `motor_console_ver8.py`（`py -3.13` で起動）。MIT（モード8）で位置指令が通る。**
   MIT 位置＝サーボ角、`o 0` で両方0、AK80-9 は電源再投入で角度が 80 deg の窓に折り返す（AK10-9 は確認中）、**Kp・Kd 換算は機種別（AK80-9 0.523 / AK10-9 1.258・1.216）**、指令途絶でトルクを出し続ける、電流は符号が信用できない、遅れ最小 8 ms、50 Hz の揺れ最大 23 ms。T265 は `.venv310\\Scripts\\python t265\\t265_check.py`。
   → 実測の正本 `motor_can_findings.md`、索引 `motor_bench_checklist.md`、T265 `realsense_t265.md`、公式資料 `motor_mit_official_notes.md`、**次の一手とコマンド解説 `next_chat_briefing_motor.md`**
-- **実機が要らないデプロイ準備（制御ループ ver9 の乾式テスト）が溜まっている。** WRS から H_eff13p5 の ONNX・golden npz・obs_contract・アクチュエータ設定を受け取ってから。
+- **実機が要らないM7乾式テストは完了（2026-09-19）。** H_eff13p5の500 golden観測でaction／目標角を検証し、各最大誤差 `1.1920929e-06`／`5.96046448e-07`（≤`1e-4`）、50 Hz CSV 500行を確認。CAN統合ver9は未着手。
 
 ---
 
@@ -101,7 +101,7 @@
 | deployment_roadmap.md | **平地デプロイまでの全体工程。学習パッケージ、コントローラー、実機設定、ver9乾式、段階的な実機試験の依存関係と完了条件** | 全体の残タスクを確認するとき |
 | `deployment_01_h_export_instruction.md` 〜 `deployment_06_h_integration_instruction.md` | Hを採用済みとした最短統合の分割指示書。D1（成果物抽出）→D2（ver9骨組み）とD3（T265）・D4（関節対応）→D6（H統合）。D5はプロコンを使う場合だけ行う。 | 分割したデプロイ用チャットを始めるとき |
 | `next_chat_d5_controller_mapping.md` | **D5専用。** 固定コマンドを残した左スティック→`(vx, vy, 0)`入力部品。単位・符号を推測せず、CAN/ONNX/T265へ接続しない。 | D5の新チャットを始めるとき |
-| `next_chat_m7_dry_loop.md` | **M7専用。** Hのgolden 500観測をONNXで再生し、action・目標角・50 Hz周期だけを照合するCAN不能な乾式実装。 | M7の新チャットを始めるとき |
+| `next_chat_m7_dry_loop.md` | **完了済みM7記録。** Hのgolden 500観測をONNXで再生し、action・目標角・50 Hz周期をCANなしで照合した結果と実装範囲。 | M7の結果・境界を確認するとき |
 | `wrs_deployment_export_handoff.md` | **WRS cloneにD1文書が無い前提の自己完結した成果物抽出プロンプト、既知のH run、Avast HTTPS障害の復旧順、次の受け渡し** | WRSからHのデプロイ成果物を取り出すとき |
 |---|---|---|
 | `wrs_overnight_20260918_instruction.md` | WRS機 Claude Code に貼った夜間自走の指示。N_w1_seed2 / N_w1p5 と仮デプロイパッケージは完了したが、通知待機の失敗でP_gainDR_narrowと2巡目は未完了 | 経緯を確認するとき |
