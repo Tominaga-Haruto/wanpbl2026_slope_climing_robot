@@ -1,7 +1,7 @@
 # このプロジェクトのドキュメント案内
 
 > **これは何:** `claude/` 以下に何のファイルがあり、いつ・どれを読むべきかの地図。
-> 新しいチャットを始めたら、まずこれを読んでから該当文書に進む。
+> 新しいチャットを始めたら、まずこれを読み、**直後に必ず `project_handbook.md` を読む。READMEや次チャット指示書だけで作業・コマンド作成・判断を始めてはいけない。**
 
 ---
 
@@ -23,7 +23,7 @@
 1. **`project_handbook.md`** ── 最優先・毎回読む。プロジェクトの前提・鉄則・現在地・環境・手順のすべて。PART A（毎回見る）と PART B（必要な作業のとき見る）の2部構成。
 2. **`handover.md`** ── 2番目に読む。「今どこにいて、次に何をすればいいか」を15分で掴むための引き継ぎ書。セッションをまたいだ経緯・決定事項・詰まったときの入口はここ。
 3. **次チャットへの指示書（担当で分かれている）:**
-   - **学習側（WRS機）:** **`next_chat_briefing.md`（2026-09-18 P1@4498後版。WRS側では2026-09-19からCodexを利用可能）。** 次の学習チャットを始めるときに読む。
+   - **学習側（WRS機）:** **`next_chat_briefing.md`（2026-09-19 Isaac Lab debugging #11版。WRS側Codex用）。** 次の学習チャットを始めるときに読む。
    - **コントローラー（Switch 2 Pro コントローラー → 速度指令）:** **`controller_prep_briefing.md`（2026-09-18）。**
    - **実機側（ノートPC・モーター・T265・デプロイ用の制御ループ）:** **`next_chat_briefing_motor.md`（2026-09-17 夜版）。** 状況の整理（やってきたこと・できるようになったこと・ゲイン換算・T265）、M1〜M9 の状態、次の一手（最初は `session_214916.txt` を読む）、コマンド解説、やり残し。
 4. 必要になった時だけ、下記の個別資料や `chats/` の過去ログを読む。
@@ -34,6 +34,8 @@
 ---
 
 ## 現在の状況（2026-09-17 更新）
+
+- **★★★★★★★★★★★★★★★★★ Isaac Lab debugging #11（2026-09-19）: WRS側Codexの利用を開始。P2/P3のrough地形逸脱を無効化し、平地をparamsで検証してから、F1（H@2999から狭いgain DR）とT1（Lの旋回設定＋純旋回比率0.35）の2本を4096 envで並列学習する。採用にはF1のc06≤5%・T1の連続300 iterを要求し、第三ランは勝手に起動しない。** → `next_chat_briefing.md`
 
 - **★★★★★★★★★★★★★★★★★ Isaac Lab debugging #10（2026-09-19）: P2_gainDR_seed2 / P3_stiffonly は11998まで正常完走したが、train 行に平地用 `sub_terrains` 上書きが無く、terrain curriculum は4.714 / 5.075まで上がった。よって両runは平地のgain DR比較として不成立で、H_eff13p5@2999の平地候補を置換する根拠に使わない。Play-v0でrough地形が見えたのは再生の誤りではなく、この逸脱を可視化したもの。WRS側Codexが利用可能になった。** → `chats/2026-09-19_isaaclab-debugging-10-p2-p3-training-review.md`
 
@@ -196,6 +198,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- chats/2026-09-19_isaaclab-debugging-10-close-next11.md ── Isaac Lab debugging #10を閉じ、WRS側Codexの利用開始、P2/P3のrough地形逸脱、既存cloneの同期方針、平地F1/T1並列学習を#11の指示書に確定した。
 - chats/2026-09-19_isaaclab-debugging-10-p2-p3-training-review.md ── Isaac Lab debugging #10。P2（狭い stiffness+damping DR、seed 2）とP3（stiffness-only、seed 1）はともに11998まで正常完走。P3の最終報酬・episode長は高いが、カリキュラムとseedが異なるため学習ログだけでは優劣・頑健性を判定しない。通常再生後、既定の平地・頑健性評価でH_eff13p5@2999と比較する。
 - chats/2026-09-18_p1-4498-next-run-decision.md ── P_gainDR_narrow@4498 の正常な学習統計を確認。3時間枠は評価を先行し、その結果で P2_seed2 / P2_stiffonly / 学習停止を固定規則により選ぶ。
 - chats/2026-09-18_deployment-roadmap-and-fixture-status.md ── 学習から平地デプロイまでの依存関係を deployment_roadmap.md に集約し、Kt測定用の固定治具が無いことを実機文書へ反映。

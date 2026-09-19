@@ -1,93 +1,55 @@
-# 次チャットへの引継ぎ書 — Isaac Lab 学習の判定と修正（2026-09-18 P1@4498完走後）
+# 次チャットへの指示書 — Isaac Lab debugging #11（2026-09-19）
 
-## このチャットの役割と禁止事項
+## 役割・最優先規約
 
-- 役割は WRS 機の Isaac Lab 学習の評価・判断・必要最小限の再学習の指示を作ること。
-- **WRS 側の Claude Code はクレジット切れで使えない。Claude Code に指示して実行させる案は出さない。** ユーザーが WRS 機の PowerShell で直接実行するため、完成した PowerShell コマンドを渡す。
-- 実機モーターは動かさない。モデル重み・ONNX・動画・生ログを Git に入れない。
-- 学習は必ず画面出力が見える **フォアグラウンド**。`tools\\runs\\_train_foreground.ps1` 以外で新規学習を起動しない。`_launch.ps1`、`Start-Process`、リダイレクト、バックグラウンド起動は禁止。
-- WRS は共用PC。他人のプロセスは触らない。開始前に `nvidia-smi` を確認し、他人の計算プロセスがあれば新規起動しない。
+- 目標は平地での実機デプロイ。WRS機の Codex は利用可能で、ユーザーは長時間のGPU利用を許可している。
+- 最初に **`README.md` → `project_handbook.md` → `handover.md` → この文書** の順で読む。恒久的な運用規約は `project_handbook.md` A1/A5、これは今回だけの実験指示である。
+- WRS機の既存cloneを使い、別cloneは作らない。開始時にgit statusが空でなければpullも学習も始めず、差分を報告する。
+- 共用PCなので他人のプロセスを止めない。`D:\\Tominaga\\`の外へ書かない。pip/conda install、Isaac Lab/Sim・conda環境/extscacheの変更・削除はしない。
+- 学習前に `nvidia-smi`、`where.exe python`、`python -c "import h5py"` を確認する。h5py単体は通っている。playのDLL衝突には実在する `tools\\runs\\_preload_h5py_and_run.py` を使い、中身を読んでから使う。
+- 全学習・再生・評価は平地にする。既定の`Velocity-Rough-...` / `...-Play-v0`はrough。平地の正確なHydra上書きは既存の平地runと`params\\env.yaml`から確認し、推測でキー名を書かない。
 
 ## 現在地
 
-- 目標は平地での実機デプロイ。直進の第一候補は `H_eff13p5@2999`、予備は `G_real_peak@2999`。
-- 旋回の追加学習は打ち切り。`N_w1_seed2` は合格点ゼロ、`N_w1p5` は4400だけ合格で、連続300 iterという採用条件を満たさない。
-- `P_gainDR_narrow` は `H_eff13p5@2999` から、stiffness x0.85〜1.15・damping x0.8〜1.25 をランダム化して再開した直進頑健化ラン。P1は **4498/4499まで完走**した。実runは `2026-09-18_21-32-01_P_gainDR_narrow_foreground`。
-- P1最終ログ: Mean reward 18.86、mean episode length 982.53、timeout 94.42%、base contact 4.71%、bad orientation 1.00%、action std 0.27、NaN/発散なし。これは学習プロセスが正常というだけで、候補昇格の根拠にはならない。
+- 直進の第一候補は `H_eff13p5@2999`、予備は `G_real_peak@2999`。
+- P2/P3は平地上書きなしでterrain level 4.714 / 5.075まで上がった。平地のgain DR比較として不成立であり、重みを再開元・候補・平地評価に使わない。
+- 旋回は L_angstd_w1@4000/4200だけに一時的な合格があり、連続300 iter・頑健性を満たさなかった。N_w1_seed2は合格ゼロ、N_w1p5は4400の単発合格。
 
-## 最初にすること
+## 最初の停止点: 同期と実在確認
 
-WRS機で次を実行する。これはフォアグラウンドの確認だけで、学習は起動しない。
+1. `D:\\Tominaga\\slope-climbing-robot`で`git status --short`、`git remote -v`、`git log -3 --oneline`を確認する。cleanなら`git pull --ff-only origin main`を行い、最新commitを報告する。差分があれば更新せず報告する。
+2. `D:\\Tominaga\\IsaacLab`で`tools\\runs`、`_preload_h5py_and_run.py`、平地評価/学習スクリプト、H/L/Jのrunの`params\\env.yaml`と`agent.yaml`を読む。
+3. H_eff13p5@2999、L_angstd_w1@4000、J_turn_resumeの実run名とcheckpointを確認する。L/Jがなければrun名一覧だけを報告して止まる。
+4. H_eff13p5@2999を16 env・平地で短時間再生し、自然な前進か、静止・転倒・不自然歩容かを記録する。再生は学習と同時に行わない。
 
-```powershell
-cd D:\Tominaga\IsaacLab
-git -C D:\Tominaga\slope-climbing-robot status --short
-nvidia-smi
-Get-ChildItem D:\Tominaga\IsaacLab\logs\rsl_rl\skyentific_poclegs_rough -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 8 Name,LastWriteTime
-Get-Content .\tools\runs\_eval.ps1
-Get-Content .\tools\runs\_train_foreground.ps1
-```
+## 実験11: 平地2本の並列学習
 
-`P_gainDR_narrow` の `model_3600.pt`、`model_4000.pt`、`model_4498.pt` の実在を確認する。評価コマンドは既存スクリプトの実引数から完成形を作る。
+起動前に両方を64 env / 20 iterでテストする。元runとの`params\\env.yaml` / `agent.yaml`のdiffを取り、flat=1.0・その他=0.0、noise_std_type=log、再開元、各ラン固有の上書きを確認する。意図しない差分があれば本番を起動しない。
 
-## すぐ再生するP1@4498
+### F1: 直進の平地 gain DR
 
-WRS機のPowerShellで、次をフォアグラウンド実行する。通常表示用であり、終了は `Ctrl+C`。PowerShellを閉じない。
+- run名 `F1_flat_gainDR_seed2`。H_eff13p5@2999から再開、seed 2、4096 env、追加1500 iter。
+- 変更は狭いactuator gain DRだけ: stiffness x0.85〜1.15、damping x0.8〜1.25。
+- 旋回用yaw_gate・純旋回比率・yaw報酬の変更は入れない。
+- 狙いはHのstiffness x0.7での転倒6.2%を、平地歩容を壊さず下げること。
 
-```powershell
-cd D:\Tominaga\IsaacLab
-.\tools\runs\_play.ps1 --task Velocity-Rough-Skyentific-Poclegs-v0 --num_envs 16 --load_run 2026-09-18_21-32-01_P_gainDR_narrow_foreground --checkpoint model_4498.pt env.commands.base_velocity.debug_vis=false
-```
+### T1: 旋回の平地学習
 
-## 実行中の3時間枠: 直進頑健化の2本比較
+- run名 `T1_turn35_flat_seed1`。H_eff13p5@2999から再開、seed 1、4096 env、追加1500 iter。
+- L_angstd_w1の実際の起動行を土台にする: yaw_gate=true、yaw追従std=0.35・weight=1.0、translate-only比率0.15を保つ。
+- 変更は純旋回指令比率だけをLの0.20から0.35へ上げること。実際のHydra key・既存値はJ/Lのparamsから確認する。
+- gain DRは入れない。直進頑健化と旋回の変更を混ぜない。
 
-P1@4498の評価前に、次の統制された2本を並列で+2700 iter実行する。P1と同じ狭い剛性・damping DRのseed再現性と、damping DRを外したstiffness-onlyを比べるためである。両方とも表示したPowerShellを閉じず、フォアグラウンドのままにする。
+## 起動・監視・評価
 
-1. `P2_gainDR_seed2`: stiffness x0.85〜1.15、damping x0.8〜1.25、seed 2。
-2. `P3_stiffonly`: stiffness x0.85〜1.15、damping x1.0固定、seed 1。
+- 起動行はWRS側Codexが実在するプリロード起動スクリプトとparamsから組み立てる。`cd`、conda有効化、Python確認、EULA、平地上書き、noise_std_type=log、run名、再開元、checkpointを省略しない完成形にする。
+- 起動後iter 30でcheckpoint loading・flat上書き・秒/iter・VRAM・GPU温度を確認する。NaN、noise std<0.05、設定差分、Hydra errorならそのrunだけ止め、末尾30行とdiffを報告する。
+- F1はS1〜S11、S1の関節RMS/最大/飽和率、c06、Hに無い不合格をH@2999と比較する。
+- T1はS6/S9を256 env・評価seed 2回で評価し、S1/S7/S8、転倒、|(vx,vy)|、左右比、歩数、FFE RMSも出す。
 
-両方とも `H_eff13p5@2999` から+2700 iter。旋回に関する変更は入れない。3時間後の次チャットは、両runとP1@4498を評価して、P1/P2/P3のいずれかを候補にするかHへ戻すかを決めるところから始める。
+## 採用規則と停止点
 
-WRS機でPowerShellを2枚開き、それぞれ次を実行する。両方ともフォアグラウンドであり、PowerShellを閉じない。
-
-```powershell
-cd D:\Tominaga\IsaacLab
-.\tools\runs\_train_foreground.ps1 --task Velocity-Rough-Skyentific-Poclegs-v0 --num_envs 4096 --max_iterations 2700 --headless --seed 2 --run_name P2_gainDR_seed2 --resume --load_run 2026-09-17_00-08-51_H_eff13p5 --checkpoint model_2999.pt agent.policy.noise_std_type=log env.events.randomize_actuator_gains.params.stiffness_distribution_params=[0.85,1.15] env.events.randomize_actuator_gains.params.damping_distribution_params=[0.8,1.25]
-```
-
-```powershell
-cd D:\Tominaga\IsaacLab
-.\tools\runs\_train_foreground.ps1 --task Velocity-Rough-Skyentific-Poclegs-v0 --num_envs 4096 --max_iterations 2700 --headless --seed 1 --run_name P3_stiffonly --resume --load_run 2026-09-17_00-08-51_H_eff13p5 --checkpoint model_2999.pt agent.policy.noise_std_type=log env.events.randomize_actuator_gains.params.stiffness_distribution_params=[0.85,1.15] env.events.randomize_actuator_gains.params.damping_distribution_params=[1.0,1.0]
-```
-
-起動直後に `Loading model checkpoint` と iteration 3000付近を両画面で確認する。いずれかが想定外のHydra keyエラーを出したら、何も書き換えずに止め、エラー全文ではなく最後の20行を次チャットへ渡す。
-
-## 次チャットで行う評価
-
-1. `model_3600.pt`、`model_4000.pt`、`model_4498.pt` 各々で、平地S1〜S11・64 env・関節別トルクを評価する。
-2. `model_4498.pt` で、c01/c03/c04/c06/c07/c08/c09/c10/c16 と、base_lin_velの0埋め0.2 s・直前値保持0.5 sを評価する。
-3. H_eff13p5@2999 の既存表と並べる。必ず出す数値はS1の前進速度・静止率・転倒率・S7/S8・関節RMS/最大/飽和率、c06の転倒率、Hに無い不合格。
-
-評価の実行には `tools\\runs\\_eval.ps1` の既存の実引数を使う。実装や報酬・地形・アクチュエータ設定を修正しない。
-
-## 評価後の夜間学習: 固定した分岐
-
-P1の評価表を受けて、次の規則から外れない。
-
-| 条件 | 夜間に回すもの |
-|---|---|
-| P1が既存基準合格、c06転倒率≤5%、H_eff13p5に無い不合格なし | `P2_seed2` だけ。P1と同じ設定、seed=2、H_eff13p5@2999から+1500 iter |
-| S1静止率>50% | `P2_stiffonly` だけ。stiffness x0.9〜1.1、damping固定、H_eff13p5@2999から+1500 iter |
-| 上記以外 | 新規学習なし。第一候補をH_eff13p5@2999のまま凍結 |
-
-- 2本目のGPU枠を埋める目的の学習はしない。
-- `O_turn35`、`O_w2`を含む旋回2巡目は起動しない。
-- 新規学習の完成コマンドは、P1の実際の起動行・`_train_foreground.ps1`の引数・元runのparamsを確認してから出す。必ず `noise_std_type=log` を含める。
-- ユーザーが8時間寝る前に、run名、起動コマンド、予想終了時刻、Ctrl+Cで止めること、画面のPowerShellを閉じないことを1画面で示す。
-
-## このチャットで必要な最終成果物
-
-1. P1の3 checkpointと4498頑健性の判定表。
-2. H_eff13p5@2999を置換するかの結論。
-3. 上の分岐に基づく、プレースホルダなしのフォアグラウンド学習コマンド1本、または学習停止の明示。
-4. 結果を `training_runs.md` と `chats/` に記録し、対象を絞ってcommit/pushする。
+- F1を候補にするのは、既存平地基準、c06転倒率≤5%、Hに無い不合格なし、自然な歩容を満たす場合だけ。
+- T1を候補にするのは、S6/S9で|yaw|≥0.25、符号一致、|(vx,vy)|≤0.10、転倒≤5%、左右比0.5〜2、既存基準の退行なしを評価2回とも連続300 iter以上で満たす場合だけ。
+- どちらも基準を満たさなければ第三ランを勝手に始めない。全runの表・動画/再生所見・原因仮説を記録して停止する。
+- 終了時に`training_runs.md`、`docs\\experiments\\`または`tools\\logs\\REPORT_exp11.md`、`chats/`を更新する。コード・文書だけをcommitし、pushはユーザーへ確認する。
