@@ -100,6 +100,7 @@
 | ファイル | 内容 | いつ読む |
 | deployment_roadmap.md | **平地デプロイまでの全体工程。学習パッケージ、コントローラー、実機設定、ver9乾式、段階的な実機試験の依存関係と完了条件** | 全体の残タスクを確認するとき |
 | `deployment_01_h_export_instruction.md` 〜 `deployment_06_h_integration_instruction.md` | Hを採用済みとした最短統合の分割指示書。D1（成果物抽出）→D2（ver9骨組み）とD3（T265）・D4（関節対応）→D6（H統合）。D5はプロコンを使う場合だけ行う。 | 分割したデプロイ用チャットを始めるとき |
+| `wrs_deployment_export_handoff.md` | **WRS cloneにD1文書が無い前提の自己完結した成果物抽出プロンプト、既知のH run、Avast HTTPS障害の復旧順、次の受け渡し** | WRSからHのデプロイ成果物を取り出すとき |
 |---|---|---|
 | `wrs_overnight_20260918_instruction.md` | WRS機 Claude Code に貼った夜間自走の指示。N_w1_seed2 / N_w1p5 と仮デプロイパッケージは完了したが、通知待機の失敗でP_gainDR_narrowと2巡目は未完了 | 経緯を確認するとき |
 | **`controller_prep_briefing.md`** | **コントローラー準備チャットへの指示書（2026-09-18）。** 方策の指令の前提、Switch 2 Pro コントローラーの PC 対応（要実測）、認識確認 → pad_probe → 割り当て → teleop（デッドマン・非常停止・途絶・変化の制限）→ 乾式テスト → ver9 への渡し方 | **コントローラーのチャットの最初** |
@@ -201,6 +202,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- chats/2026-09-19_wrs-export-handoff-and-avast.md ── WRS cloneにD1文書が無いことを確認し、H成果物の自己完結抽出プロンプトを引き継ぎ書に作成。Codex接続を阻害するAvast HTTPSスキャンはRepair→再起動→hardware network accelerationの順で復旧する方針。
 - chats/2026-09-19_deployment-05-priority-review.md ── D5の着手条件を確認。速度指令の符号・範囲はD1の`obs_contract.md`なしに推測できないため、既存Hのデプロイ成果物エクスポートを先行する。実機・CAN・コントローラーの状態変更はなし。
 - chats/2026-09-19_motor-console-ver8-2-dual-test.md ── ID0x22（AK80-9）とID0x12（AK10-9）の二機同時MIT試験用に、ver8派生の `motor_console_ver8_2.py` を追加。二機ゼロ保持100周期、同時実動、個別の電流・速度・移動量中止と両軸零MIT指令を実機で確認。10台＋推論のD3は未。
 - chats/2026-09-19_controller-required-hardware-test.md ── プロコン系で今日必須の実機試験を、Jetson＋有線Switch 2 Proだけの50 Hz乾式入力・切断試験に限定した。`obs_contract.md` 未受領は base 座標へのvx/vy符号確定だけを阻害し、入力試験自体は妨げないと整理した。

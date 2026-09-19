@@ -8,6 +8,7 @@
 
 ## 現在地
 
+- **WRS成果物抽出（2026-09-19）:** WRS cloneにはノートPC側の `deployment_01_h_export_instruction.md` が無く、そのパスを読ませる指示は停止した。Hの実在runは `2026-09-17_00-08-51_H_eff13p5` / `model_2999.pt`。次は `wrs_deployment_export_handoff.md` の自己完結プロンプトで、Git操作なし・学習なしにHのONNX、観測契約、golden dataset、アクチュエータ表、SHA256、READMEを抽出する。Pの置換評価は未確定、P2/P3はrough地形で候補外、Lは候補外、Gは予備。Avast HTTPSスキャンでCodex接続が失敗するため、WRS側のGit同期は再開せず、Avast Repair→再起動→hardware network accelerationのみ無効化の順で切り分ける。
 - 直進の第一候補は H_eff13p5@2999、予備は G_real_peak@2999。
 - P2_gainDR_seed2 / P3_stiffonly は平地上書きを欠き、terrain level 4.714 / 5.075 のrough地形で学習した。平地候補・再開元に使わない。
 - WRS側の既存cloneには多数の未追跡ファイルがあり、GitHub fetchはローカルCA不足によるSSL証明書エラーで失敗する（2026-09-19）。**WRS側のGit同期は打ち切り**。sslVerify=false・証明書設定変更・二重cloneはしない。WRSは現在の作業ツリーを実行専用として使い、GitHub側の文書更新はこのノートPCで行う。
