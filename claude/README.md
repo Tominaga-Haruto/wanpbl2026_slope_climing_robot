@@ -202,6 +202,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- chats/2026-09-19_h-deployment-package-received.md ── H_eff13p5@2999のデプロイ成果物をノートPCでSHA256照合し、全6必須ファイルの一致とONNX 42入力・10出力／Torch照合PASSを確認。次はCANなしのM4ゲイン表とM7乾式実装。
 - chats/2026-09-19_wrs-export-handoff-and-avast.md ── WRS cloneにD1文書が無いことを確認し、H成果物の自己完結抽出プロンプトを引き継ぎ書に作成。Codex接続を阻害するAvast HTTPSスキャンはRepair→再起動→hardware network accelerationの順で復旧する方針。
 - chats/2026-09-19_deployment-05-priority-review.md ── D5の着手条件を確認。速度指令の符号・範囲はD1の`obs_contract.md`なしに推測できないため、既存Hのデプロイ成果物エクスポートを先行する。実機・CAN・コントローラーの状態変更はなし。
 - chats/2026-09-19_motor-console-ver8-2-dual-test.md ── ID0x22（AK80-9）とID0x12（AK10-9）の二機同時MIT試験用に、ver8派生の `motor_console_ver8_2.py` を追加。二機ゼロ保持100周期、同時実動、個別の電流・速度・移動量中止と両軸零MIT指令を実機で確認。10台＋推論のD3は未。

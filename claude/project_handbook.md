@@ -40,6 +40,8 @@
 
 **WRS側Git（2026-09-19）:** `git fetch origin` はローカルCA不足のSSL証明書エラーで失敗する。WRS側では証明書回避・Git設定変更をせず、Git同期を打ち切る。WRSは既存作業ツリーでの実行専用、GitHubへの文書更新と履歴管理はノートPC側で行う。
 
+**Hデプロイ成果物（2026-09-19）:** H_eff13p5@2999 の既存ONNXから、ONNX・観測契約・golden dataset・アクチュエータ表をWRS側で抽出し、ノートPCへ受領した。SHA256は6必須ファイルすべてWRSのmanifestと一致、ONNXは42入力・10出力、Torchとの最大絶対誤差はrandom `9.537e-06`／実観測 `7.153e-07`でPASS。ノートPCの未追跡 `H_eff13p5_2999\\H_eff13p5_2999\\` は重みを含むためGitに追加しない。次はM4のゲイン表とM7の乾式実装であり、実機CANへの接続はまだしない。
+
 1. **★ 柱Aの実行環境は WRS共用PC（Windows 11 / RTX 3090 Ti）に移った。** 環境構築は 2026-09-15 に完了（`wrs_pc_environment.md`）。Alienware は 2026-09-13 から故障中で、柱Aはもう Alienware を待たない。
 2. **★ 機体を作り直した（2026-09-16、GitHub `main` の `6ede75b`）。** Onshape から再エクスポート → URDF 後処理 → USD → 64 env / 20 iter のテスト起動が完走。木構造 5/5・根＝胴体 2.918 kg・総質量 10.1058 kg。
 3. **★★ 再エクスポートの途中で、過去の学習を根本から疑わせる事実が2つ見つかった（B2・`robot_model_conventions.md`）:**
