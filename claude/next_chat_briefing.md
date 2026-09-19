@@ -10,24 +10,23 @@
 
 - 直進の第一候補は H_eff13p5@2999、予備は G_real_peak@2999。
 - P2_gainDR_seed2 / P3_stiffonly は平地上書きを欠き、terrain level 4.714 / 5.075 のrough地形で学習した。平地候補・再開元に使わない。
-- WRS側の既存cloneには、`README.md` / `project_handbook.md` の削除と多数の未追跡ファイルがある。**clone、pull、fetch、reset、checkout、restore、stash、削除を行わない。** Git状態が確定するまで新しい長時間学習も始めない。
+- WRS側の既存cloneには、`README.md` / `project_handbook.md` の削除と多数の未追跡ファイルがある。WRS側Codexに既存cloneを安全に整理・同期させる。二重cloneは作らない。未追跡の`references/`・生成物・バックアップは勝手に削除・追加しない。
 
 ## 最初にWRS側の既存Codexへ渡す指示
 
-WRS側Codexへ次を送る。これは読み取りだけで、Gitや学習環境を変更しない。
+WRS側Codexへ次を送る。Git同期までをWRS側Codexが行う。
 
 ```text
-既存cloneがdirtyのため、clone/pull/fetch/reset/checkout/restore/stash/delete、学習起動を行わず停止してください。
+既存の `D:\Tominaga\slope-climbing-robot` を安全にGit管理してください。二重cloneは禁止です。
 
-次の読み取りだけを行い、結果を短く報告してください。
-1. git status --short
-2. git remote -v
-3. git branch --show-current
-4. git log -3 --oneline
-5. git diff --name-status
-6. git ls-files README.md project_handbook.md
+1. `git remote -v` と `git branch --show-current` で、originがこのプロジェクトのGitHub remote、branchがmainであることを確認する。違えば変更せず報告して止まる。
+2. `git status --short`、`git diff -- README.md project_handbook.md`、`git ls-files README.md project_handbook.md` を読み、削除された追跡docsがローカル編集ではなく、旧cloneの未整理状態であることを確認する。
+3. 確認できた場合、追跡されている削除docsだけを `git restore --source=HEAD -- README.md project_handbook.md` で戻す。`references/`、onshape_exportのbak、toolsの生成物など未追跡物は削除・add・stashしない。
+4. `git fetch origin` の後、`git pull --ff-only origin main` で同期する。競合・fast-forward不能・未追跡ファイル衝突があれば、何も上書きせず停止して原因を報告する。
+5. 同期後に `git status --short`、`git log -3 --oneline`、`git rev-parse HEAD` を確認する。未追跡物だけが残る状態を目標にする。
+6. Git同期後、`AGENTS.md`、`claude/README.md`、`claude/project_handbook.md`、`claude/handover.md`、`claude/next_chat_briefing.md`を読んでから学習へ進む。
 
-未コミット削除・未追跡物が、ユーザーの作業か過去の未整理物かは推測しないでください。修復案や同期案は実行せず、根拠と選択肢だけを出して停止してください。
+学習を起動する前に、各runについて平地16 envの再生コマンドをユーザーへ先に提示してください。実在するプリロード起動方法・平地上書きから作り、学習中/終了後にそのrunの最新保存済みcheckpointを自動選択する完成コマンドにします。学習終了後は、採用した固定checkpoint名を埋めた再生コマンドも必ず提示してください。
 ```
 
 ## Git状態の判断後に行う学習案（まだWRSへ送らない）
