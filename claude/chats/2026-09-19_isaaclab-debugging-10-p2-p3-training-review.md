@@ -10,8 +10,7 @@
 - どちらも NaN・発散のない正常完走である。
 - P3 は mean reward 6.94、episode length 628.74 で P2（5.39、558.50）を上回る。しかし比較時点のカリキュラムが異なる（P3: terrain 5.075 / push 2.8 / command 1.0、P2: 4.714 / 0.0 / 1.5）うえ、seed も異なる。最終ログだけで P3 の方策が優れる、または damping DR が悪いとは結論できない。
 - P2 は damping DR 下で学習を維持できたことを示す。一方、候補の採否は再生の見た目や学習報酬ではなく、既定の平地 S1〜S11 と c01/c03/c04/c06/c07/c08/c09/c10/c16、および速度観測途絶の評価表で H_eff13p5@2999 と比較して決める。
-- WRS機には `tools\\runs\\_play.ps1` が無い。通常の再生は必ず `cd D:\\Tominaga\\IsaacLab`、`conda activate D:\\Tominaga\\envs\\isaac_env`、`isaaclab.bat -p scripts\\reinforcement_learning\\rsl_rl\\play.py` の順で実行する。`(base)` のままでは `h5py._errors` の DLL import error になる。
-- run フォルダ名は実際のタイムスタンプを確認し、最終チェックポイントは表示された iteration に対応する `model_11998.pt` を指定する。P2/P3は `agent.policy.noise_std_type=log` を明示して読み込む。
+- `_play.ps1` の有無をWRS機上で確認せずに案内したのは誤りだった。さらに、`conda activate` だけで `h5py._errors` の DLL error が解消すると断定したが、再生で同じエラーが継続しており未確認だった。修復・再生は保留し、h5py単体 import と起動スクリプトの実在・内容を読む二段階診断へ戻した。
 
 ## 手を動かした場所
 

@@ -30,34 +30,13 @@ Get-Content .\tools\runs\_train_foreground.ps1
 
 `P_gainDR_narrow` の `model_3600.pt`、`model_4000.pt`、`model_4498.pt` の実在を確認する。評価コマンドは既存スクリプトの実引数から完成形を作る。
 
-## WRS機で確認済みの起動形式（再生・学習）
-
-**WRS機には `tools\\runs\\_play.ps1` は無い。** 再生も学習も、下記の完全な PowerShell 形式を正本とする。`(base)` のまま `isaaclab.bat` を起動すると、`h5py._errors` の DLL import error になるため、毎回 `conda activate D:\\Tominaga\\envs\\isaac_env` を含める。コマンドの `cd D:\\Tominaga\\IsaacLab` を省略しない。
-
-```powershell
-cd D:\Tominaga\IsaacLab
-$u=[char]95
-$v="D:\Tominaga\envs\isaac${u}env"
-conda activate $v
-$p="scripts\reinforcement${u}learning\rsl${u}rl\play.py"
-& .\isaaclab.bat -p $p --task Velocity-Rough-Skyentific-Poclegs-v0 --num_envs 16 --load_run RUN_FOLDER_NAME --checkpoint CHECKPOINT_NAME agent.policy.noise_std_type=log env.commands.base_velocity.debug_vis=false
-```
-
-- `RUN_FOLDER_NAME` と `CHECKPOINT_NAME` は、その場で存在を確認した実名に置き換える。P2/P3 最終再生は `model_11998.pt`。
-- GUI再生なので `--headless` は付けない。表示を終了するときは `Ctrl+C`。
-- 学習はユーザーが実行済みの同じ `conda activate`・`cd`・`isaaclab.bat -p train.py` 形式を使う。存在を確認していない `_train_foreground.ps1` / `_play.ps1` を案内しない。
-
 ## すぐ再生するP1@4498
 
 WRS機のPowerShellで、次をフォアグラウンド実行する。通常表示用であり、終了は `Ctrl+C`。PowerShellを閉じない。
 
 ```powershell
 cd D:\Tominaga\IsaacLab
-$u=[char]95
-$v="D:\Tominaga\envs\isaac${u}env"
-conda activate $v
-$p="scripts\reinforcement${u}learning\rsl${u}rl\play.py"
-& .\isaaclab.bat -p $p --task Velocity-Rough-Skyentific-Poclegs-v0 --num_envs 16 --load_run 2026-09-18_21-32-01_P_gainDR_narrow_foreground --checkpoint model_4498.pt agent.policy.noise_std_type=log env.commands.base_velocity.debug_vis=false
+.\tools\runs\_play.ps1 --task Velocity-Rough-Skyentific-Poclegs-v0 --num_envs 16 --load_run 2026-09-18_21-32-01_P_gainDR_narrow_foreground --checkpoint model_4498.pt env.commands.base_velocity.debug_vis=false
 ```
 
 ## 実行中の3時間枠: 直進頑健化の2本比較
