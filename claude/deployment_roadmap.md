@@ -9,8 +9,24 @@
 - シミュレーション: 平地の第一候補は H_eff13p5@2999、予備は G_real_peak@2999。小旋回を含む評価は合格している。WRSでパッケージ化と、より頑健な P_gainDR_narrow の判定を進めている。
 - 入力: JetsonでSwitch 2 Proの有線認識と左スティックの生値は確認済み。読み取り専用の pad_probe.py は作成済みだが、Jetson上での50 Hz・抜線試験は未完了。
 - モーター: MIT位置指令、機種別Kp/Kd換算、50 Hzの予定表は確認済み。全10台のID・機種・関節・正方向はユーザー設定済み。
-- センサ: T265はWindowsで200 Hz取得とbase座標への変換が確認済み。ロボットへの取付け・振動時の評価は未実施。
+- センサ: T265はWindowsで200 Hz取得とbase座標への変換が確認済み。ロボットへの取付け・位置補正は未実施。
 - 統合: 方策、T265、10台CANをつなぐver9は未実装。
+
+## 0a. デプロイ作業地図（実機が必要か・読む指示書）
+
+| 順 | 作業 | 実機 | 指示書 | 現在地 |
+|---:|---|:---:|---|---|
+| 1 | H成果物の抽出・照合 | 不要 | `deployment_01_h_export_instruction.md` | 完了 |
+| 2 | ver9の骨組み | 不要 | `deployment_02_ver9_shell_instruction.md` | 未実装 |
+| 3 | T265の取付け・base観測 | **必要** | `deployment_03_t265_mount_instruction.md` | **今日実施** |
+| 4 | H順10関節のID・符号・変換表 | **必要** | `deployment_04_joint_mapping_instruction.md` | M5と一体 |
+| 5 | M5: 基準姿勢・`o 0`・原点運用 | **必要** | `deployment_05_m5_origin_instruction.md` | **今日実施。ただし再現可能な支持が前提** |
+| 6 | ONNX golden再生・目標角・50 Hz | 不要 | `next_chat_m7_dry_loop.md` | 次の最優先PC作業 |
+| 7 | Hを42観測・10目標角へ統合 | 不要 | `deployment_06_h_integration_instruction.md` | 6の後 |
+| 8 | コントローラー入力 | Jetsonのみ | `controller_next_chat_briefing.md` | 後回し。固定ゼロ指令で開始可能 |
+| 9 | 1モーター→片脚→全身のCAN実機試験 | **必要** | `next_chat_briefing_motor.md` §2・§4 | 3〜7と最小停止処理の後 |
+
+電源系はユーザー申告で解決済み。Kt測定は固定治具が無いため保留であり、初回の方策統合の前提にはしない。コントローラーのデッドマン等も、コントローラーを接続する段階まで保留できる。一方で、CAN受信・T265・motor errの停止処理、原点変換、10関節順は初回の方策送信前に必要である。
 
 ## 1. 学習側: 実機へ渡せる方策を確定する
 
