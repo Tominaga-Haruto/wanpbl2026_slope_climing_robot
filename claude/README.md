@@ -99,6 +99,7 @@
 
 | ファイル | 内容 | いつ読む |
 | deployment_roadmap.md | **平地デプロイまでの全体工程。学習パッケージ、コントローラー、実機設定、ver9乾式、段階的な実機試験の依存関係と完了条件** | 全体の残タスクを確認するとき |
+| `deployment_01_h_export_instruction.md` 〜 `deployment_06_h_integration_instruction.md` | Hを採用済みとした最短統合の分割指示書。D1（成果物抽出）→D2（ver9骨組み）とD3（T265）・D4（関節対応）→D6（H統合）。D5はプロコンを使う場合だけ行う。 | 分割したデプロイ用チャットを始めるとき |
 |---|---|---|
 | `wrs_overnight_20260918_instruction.md` | WRS機 Claude Code に貼った夜間自走の指示。N_w1_seed2 / N_w1p5 と仮デプロイパッケージは完了したが、通知待機の失敗でP_gainDR_narrowと2巡目は未完了 | 経緯を確認するとき |
 | **`controller_prep_briefing.md`** | **コントローラー準備チャットへの指示書（2026-09-18）。** 方策の指令の前提、Switch 2 Pro コントローラーの PC 対応（要実測）、認識確認 → pad_probe → 割り当て → teleop（デッドマン・非常停止・途絶・変化の制限）→ 乾式テスト → ver9 への渡し方 | **コントローラーのチャットの最初** |
@@ -200,6 +201,7 @@
 - **体系的記録を更新しただけでは不十分。** 更新したチャットでも、`chats/` への記録は別途必ず作る。
 
 ### 索引（新しい順）
+- chats/2026-09-19_controller-required-hardware-test.md ── プロコン系で今日必須の実機試験を、Jetson＋有線Switch 2 Proだけの50 Hz乾式入力・切断試験に限定した。`obs_contract.md` 未受領は base 座標へのvx/vy符号確定だけを阻害し、入力試験自体は妨げないと整理した。
 - chats/2026-09-19_isaaclab-debugging-10-close-next11.md ── Isaac Lab debugging #10を閉じ、WRS側Codexの利用開始、P2/P3のrough地形逸脱、既存cloneの同期方針、平地F1/T1並列学習を#11の指示書に確定した。
 - chats/2026-09-19_isaaclab-debugging-10-p2-p3-training-review.md ── Isaac Lab debugging #10。P2（狭い stiffness+damping DR、seed 2）とP3（stiffness-only、seed 1）はともに11998まで正常完走。P3の最終報酬・episode長は高いが、カリキュラムとseedが異なるため学習ログだけでは優劣・頑健性を判定しない。通常再生後、既定の平地・頑健性評価でH_eff13p5@2999と比較する。
 - chats/2026-09-18_p1-4498-next-run-decision.md ── P_gainDR_narrow@4498 の正常な学習統計を確認。3時間枠は評価を先行し、その結果で P2_seed2 / P2_stiffonly / 学習停止を固定規則により選ぶ。
