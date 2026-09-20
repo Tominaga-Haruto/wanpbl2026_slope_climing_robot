@@ -2,7 +2,7 @@
 
 ## ゴール
 
-**直結時のみ完了（2026-09-20）:** Jetsonに有線直結したSwitch 2 Proは、**モーター/CAN/ONNXへ接続せず**に50 Hzで読み、左スティックから画面・CSVだけに `(vx, vy, 0)` を出す乾式確認を終えた。実運用に必要な変換ケーブル経由ではUSB設定に失敗するため、D5は未完了。ユーザー判断（2026-09-20）により、実運用の第一候補をBluetooth無線へ切り替えた。無線の乾式受入手順は `reports/2026-09-20_d5-wireless-dry-run.md`。詳細な有線失敗は `chats/2026-09-20_d5-extension-path-handoff.md`。
+**D5完了（2026-09-20）:** Jetsonに有線直結したSwitch 2 Proは、**モーター/CAN/ONNXへ接続せず**に50 Hzで読み、左スティックから画面・CSVだけに `(vx, vy, 0)` を出す乾式確認を終えた。有線の延長経路はUSB設定に失敗したが、ユーザー判断により実運用の第一候補をBluetooth無線へ切り替え、本書の無線手順で登録削除からペアリング・信頼・接続を繰り返し再現できることをユーザーが確認した。D8の直前にはBluetooth接続と現在の`eventN`を再確認する。無線の乾式受入手順は `reports/2026-09-20_d5-wireless-dry-run.md`。詳細な有線失敗は `chats/2026-09-20_d5-extension-path-handoff.md`。
 
 ## 確定した実測
 
@@ -14,7 +14,7 @@
 - 仮デプロイは左スティックだけの並進。A/Y旋回は、旋回方策を別途用意してから乾式試験する。
 - 通常ターミナルの専用venv `~/.venvs/controller-d5` に `evdev` を導入済み。Jetson側Codexの実行環境には`/dev/input`が見えないため、実機入力の試験には通常ターミナルを使う。
 - 中立約10秒・前後左右・抜線・再接続を実測済み。前=`+vx`、後=`-vx`、右=`-vy`、左=`+vy`、`wz=0`。抜線は`Errno 19`でプローブが終了し、再接続後はゼロから起動した。
-- **無線で得た実測（2026-09-20）:** Switch 2 Proは Bluetooth HID `98:B6:E9:4A:87:92`（public）、`057e:2009`、Name=`Pro Controller`としてペアリング・信頼・接続に成功した。`Icon: input-gaming`、HID UUID、Linux `Handlers=js0 event7` を確認した。Bluetooth HIDでは`/dev/input/by-id`のリンクが作られないため、`eventN`を固定しない。接続ごとに`Uniq=98:b6:e9:4a:87:92`で`/proc/bus/input/devices`から現在の`eventN`を再検出する。CAN等未接続で中立・4方向・抜線・再接続の50 Hz試験を通した場合だけ、D5を完了とする。ゼロからの再接続手順は`reports/2026-09-20_d5-wireless-dry-run.md`。Bluetooth未使用時の代替は、直結時と同じ`045e:028e`として安定認識するUSBデータ対応の延長経路である。
+- **無線で得た実測（2026-09-20）:** Switch 2 Proは Bluetooth HID `98:B6:E9:4A:87:92`（public）、`057e:2009`、Name=`Pro Controller`としてペアリング・信頼・接続に成功した。`Icon: input-gaming`、HID UUID、Linux `Handlers=js0 event7` を確認した。Bluetooth HIDでは`/dev/input/by-id`のリンクが作られないため、`eventN`を固定しない。接続ごとに`Uniq=98:b6:e9:4a:87:92`で`/proc/bus/input/devices`から現在の`eventN`を再検出する。登録削除からの無線接続はユーザーが繰り返し再現できることを確認し、D5の実運用接続経路として受け入れた。途中の直後切断は電池残量が要因の可能性があるが未確定。ゼロからの再接続手順は`reports/2026-09-20_d5-wireless-dry-run.md`。Bluetooth未使用時の代替は、直結時と同じ`045e:028e`として安定認識するUSBデータ対応の延長経路である。
 
 ## D8で再開するときの確認
 
