@@ -69,4 +69,12 @@ g_b = R_CB^T · (R_wc^T · (0,−1,0))
 4. **制御ループ（ver9）: T265 は別プロセス**で読み、最新値＋時刻を共有。途絶（`STALE_S`）・confidence 低下で方策を止める。学習側の許容: 0 埋めは 0.2 s、直前値保持は 0.5 s まで転倒 0%（実験04 P6-2）。
 5. （小）CAD / URDF に T265 を載せる（約 55 g）。
 
+## 6. 取付け位置のCAD記録（2026-09-20）
+
+- 正面は、waist前面のT265用長方形開口が向く方向とする。T265はレンズをこの正面へ向け、水平に固定する。
+- CADの外形基準では、waist下辺→開口下辺は55.000 mm、開口は高さ25.500 mm・幅154.000 mm、waist右辺→開口左辺は189.000 mmである。
+- 開口左辺から左右レンズ中心は13.000 / 77.000 mm。公式データシートの左右イメージャ間隔64.00 ± 0.15 mm、およびtracking centerが両イメージャの中点という定義と一致する。したがってtracking centerは開口左辺から45.000 mm、waist右端から234.000 mm、開口上下中央（waist下辺から67.750 mm）に置く。
+- ただしこの外形座標を `R_OFFSET` に直接使わない。base原点との変換と、前面開口からの奥行きは未確定である。公式図のtracking centerはT265背面から5.95 mmにあるため、固定後にこの奥行きも測定する。
+- 既存の前向き・水平の符号確認CSVは `C:\Users\harut\Connect2USB2CAN\t265\logs\t265_20260917_213011.csv` などにある。取付け姿勢が同じなら、5動作は再実施不要である。
+
 出典: [librealsense v2.54.1 リリースノート](https://github.com/IntelRealSense/librealsense/releases/tag/v2.54.1) ／ [T265 ドキュメント（v2.53.1）](https://github.com/realsenseai/librealsense/blob/v2.53.1/doc/t265.md)
