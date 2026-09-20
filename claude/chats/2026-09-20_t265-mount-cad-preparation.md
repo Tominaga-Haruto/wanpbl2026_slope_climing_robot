@@ -28,3 +28,8 @@
 
 - Intel, *RealSense Tracking Camera T265 Datasheet*, §3.1 / §4.2 / §4.3.
 - RealSense SDK, `doc/t265.md` のsensor origin and coordinate system。
+
+## 引継ぎ書
+
+- 実機取付け、`R_OFFSET`実測、取付け後のconfidence／途絶試験、ver9に渡すまでの残作業を `next_chat_t265_mount_handoff.md` に分離した。
+- 既存の5動作CSVは取付け姿勢が同じ場合に再利用し、再取得は向きが異なる場合だけとした。モーター通電・CAN送信はこの引継ぎの範囲外である。
