@@ -11,7 +11,7 @@
 ## 1. 最初にやること
 1. `controller_next_chat_briefing.md` を先に読み、この文書と `next_chat_briefing_motor.md` の「状況の整理」「ファイルの場所」を読む。
 2. Jetson 上のプロジェクト配置と Python 環境を確認する。パッケージ導入や既存のモーター制御コードへの変更は、この確認結果を受けてからにする。
-3. USB 有線の実測は済んでいる。Bluetooth と Steam Input の調査はしない。
+3. D5はBluetooth実運用経路で完了している。再接続と現在の`eventN`の解決は`reports/2026-09-20_d5-wireless-dry-run.md`に従う。Steam Inputの調査はしない。
 
 ## 2. 前提として分かっていること
 - **方策が受け取る指令:** 観測の velocity_commands は (lin_vel_x, lin_vel_y, ang_vel_z) の3つ、胴体（base）座標。学習時は3つとも ±1 の範囲で出していた。実値の範囲・並び・scale は WRS が作る `DEPLOY_README.md`（`D:\\Tominaga\\deploy_pkg\\20260918\\`）と `obs_contract.md` で必ず確認する（この文書の数字で決めない）。
@@ -32,8 +32,8 @@
 
 ## 4. Switch 2 Pro コントローラーの PC 対応（補足）
 - USB 有線なら動くという情報が多い。Steam は Switch 2 Pro コントローラーに対応済み（Steam Input で XInput 相当に変換できる）。
-- 無線（Bluetooth）は追加のドライバーが要るという報告がある。
-- pygame（SDL2 ベース）で直接読めるかは不明。SDL3 系か、Steam Input 経由の XInput で読むのが候補。**どの経路で読めるかを最初に実測して決める。推測で実装しない。**
+- BluetoothはJetson標準のBluetooth HIDとして実測済みで、追加ドライバーは不要だった。`Pro Controller`（`057e:2009`）として接続し、現在の`eventN`を`Uniq=98:b6:e9:4a:87:92`で再検出する。正本は`reports/2026-09-20_d5-wireless-dry-run.md`。
+- pygame、SDL、Steam Inputは今回のJetson経路に使わない。
 - 出典: https://windowsforum.com/news/switch-2-pro-controller-usb-works-wireless-needs-drivers.442915/ 、https://www.techradar.com/gaming/the-nintendo-switch-2-pro-controller-is-now-supported-on-steam 、https://www.pcgamer.com/how-to-use-a-nintendo-switch-pro-controller-on-pc/
 
 ## 5. 進め方（この順。1段ずつユーザーの実測で確かめる）
@@ -41,7 +41,7 @@
 ### 実装状況（2026-09-18）
 
 - Connect2USB2CAN の feat/mit-mode に pad_probe.py を追加済み（commit fab6eff）。左スティックを安定パスから50 Hzで読み、CSVと画面へ生値・正規化値・状態を出す。CAN、ONNX、モーターは使わない。
-- **D5乾式確認は直結時だけ2026-09-20に完了。** Jetson通常ターミナルで専用venvの`evdev`を用い、中立約10秒・前後左右・USB抜線・再接続をCAN等未接続で確認した。抜線は`Errno 19`・exit 3で検出し、再接続後はゼロから起動する。実運用の変換ケーブル経由ではPro Controller `057e:2009`がUSB設定`error -32`で失敗し、`/dev/input`が無い。直結と同じ`045e:028e`として認識するUSBデータ対応の延長経路を確保するまでD5は未完了。詳細は `chats/2026-09-20_d5-extension-path-handoff.md`。
+- **D5乾式確認は完了（2026-09-20）。** 有線直結では専用venvの`evdev`を用い、中立約10秒・前後左右・USB抜線・再接続をCAN等未接続で確認した。実運用はBluetoothを採用し、`Pro Controller`の登録削除からの接続を繰り返し再現できる。接続ごとの`eventN`の再検出と試験手順は`reports/2026-09-20_d5-wireless-dry-run.md`に従う。有線延長の`error -32`は未解決だが、D5をブロックしない。
 - この部品は teleop.py の代わりではない。デッドマン、非常停止ラッチ、変化率制限、ver9への受け渡しは次段階である。
 1. **認識の確認（完了）:** Jetson で USB 有線認識と `evtest` による生値確認が済んだ。Windows / Steam の手順は今回の経路には使わない。
 2. **読み取りの確認スクリプト `controller\\pad_probe.py`:** 使う経路（SDL / XInput / HID）で、全部の軸とボタンの生の値を 50 Hz で表示し、ログに残す。スティックの中立のずれ（デッドゾーンの決め方）、最大値、更新周期の揺れ、抜き差ししたときの挙動を実測する。パッケージを入れる場合は、どの Python に何を入れるかを先にユーザーに確認する。
@@ -55,7 +55,6 @@
 - 1モーター → 脚1本 → 全身の順は実機側の手順に従う。コントローラーは全身を吊ったときに初めて方策につなぐ。
 
 ## 7. やり残しになりそうなこと（このチャットで決めなくてよい）
-- 無線化（Bluetooth のドライバー）
 - 振動などのフィードバック（途絶や非常停止を手元に知らせる）
 - 立ち止まり (0, 0, 0) の指令で方策が安定して立っていられるかは、シムの S3 と吊り試験で見る
 
