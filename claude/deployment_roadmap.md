@@ -13,10 +13,10 @@
 | D1 | Hデプロイ成果物 | **完了** | なし | `deployment_01_h_export_instruction.md` |
 | D2 | ver9の方策非依存骨組み | 未実装 | なし | `deployment_02_ver9_shell_instruction.md` |
 | D3 | T265のbase原点補正 | **実験完了、ver9反映待ち** | なし | `deployment_03_t265_mount_instruction.md`、`realsense_t265.md` |
-| D4 | 全10モーターのH順対応表 | ID・機種・符号は確定、原点欄待ち | D7の結果で完成 | `deployment_04_joint_mapping_instruction.md`、`reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md` |
+| D4 | 全10モーターのH順対応表 | **完了**（ID・機種・符号・基準姿勢でのゼロ対応を確定） | なし | `deployment_04_joint_mapping_instruction.md`、`reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md` |
 | D5 | Jetsonのコントローラー50 Hz入力 | **直結では完了、実運用の延長経路で未完了** | D1の`obs_contract.md`で指令軸を確定 | `chats/2026-09-20_d5-extension-path-handoff.md`、`deployment_05_controller_mapping_instruction.md` |
-| D6 | ハードウェア構成の完全固定 | 未完了 | D3〜D5と並行可 | `next_chat_m5_all_joint_origin.md` |
-| D7 | 全10軸の原点設定・原点変換表 | 未完了 | **D6** | `deployment_05_m5_origin_instruction.md`、`next_chat_m5_all_joint_origin.md` |
+| D6 | ハードウェア構成の完全固定 | **完了**（D7実施時の最終構成を基準姿勢で固定） | なし | `d7_棒支持_全関節原点設定_実験手順.md` |
+| D7 | 全10軸の原点設定・原点変換表 | **完了**（10/10で設定後`0.0deg`・`err=0`） | なし | `d7_棒支持_全関節原点設定_実験手順.md`、`reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md`、`logs\\d7_origin\\session_20260920_183915.txt` |
 | D8 | ver9統合ループとPC上の50 Hz確認 | 未実装 | **D1, D2, D3, D4, D5, D7** | `deployment_06_h_integration_instruction.md`、`next_chat_m7_dry_loop.md` |
 | D9 | 吊り状態での実機CAN統合 | 未実施 | **D8** | `next_chat_briefing_motor.md` §2・§4 |
 | D10 | 床に下ろして平地で速度指令を入れる | 未実施 | **D9** | `next_chat_briefing_motor.md` §4 |
@@ -45,7 +45,7 @@
 ### D4: 全10モーターをHの関節順へ対応付ける
 
 - **すること:** CAN ID、機種、実機正方向、H順の対応を表にし、実機角度／速度→H順とH目標角→CAN IDの両方向変換を用意する。
-- **前提:** ID・機種・符号は確定済み。原点値とH関節角の変換だけはD7待ち。
+- **完了:** ID・機種・符号は確定済み。D7で基準姿勢を全軸MITゼロに設定したため、原点値とH関節角の変換も全軸で確定した。
 - **次へ渡すもの:** D8が使う10軸変換表。
 
 ### D5: Jetsonでコントローラー入力を50 Hzで読めるようにする
@@ -63,12 +63,15 @@
 - **すること:** 以後に予定している部品脱着・配線変更を終え、T265、全モーター、配線、支持方法を最終構成へ固定する。
 - **前提:** なし。D1〜D5と並行可能。
 - **ブロックするもの:** D7。構成を変える可能性が残る間は、デプロイ用の原点設定をしない。
+- **2026-09-20 完了:** 最終構成を基準姿勢で機械固定してD7を実施した。以後の部品脱着・配線変更・姿勢変更はD7の再実施条件である。
 
 ### D7: 基準姿勢で全10モーターの原点を設定する
 
 - **すること:** D6で固定した構成を基準姿勢に置き、全10軸へ `o 0` を設定する。各軸について、MIT原点とHの関節角の変換をD4の表へ記録する。
 - **前提:** **D6のみ。** D1〜D5を待つ必要はない。
 - **次へ渡すもの:** D8に必要な全10軸の原点変換表。
+- **2026-09-20 実施結果・完了:** ユーザーが最終構成を完璧な基準姿勢で機械固定したことを確認後、両CANチャネルで10軸を検出し、`0x13, 0x1C, 0x1B, 0x11, 0x2A, 0x21, 0x12, 0x1A, 0x22, 0x2B` の順に原点設定を送信した。全10軸で直後のフィードバックは `pos=+0.0deg`、`err=0`、温度30〜34°Cだった（`C:\Users\harut\Connect2USB2CAN\logs\d7_origin\session_20260920_183915.txt`）。基準姿勢がHゼロ姿勢なのでD4の変換は全軸で `q_H=q_MIT`、`q_MIT_target=q_H_target` となる。
+- **記録上の注意:** このログには設定前角度、写真、棒の支持点・再現寸法が含まれない。今回はユーザー確認を基準姿勢の記録として採用する。電源断、姿勢変更、部品脱着、配線変更後は、今回のゼロを再利用せず同じ基準姿勢でD7をやり直す。
 
 ## 3. 統合プログラムの完成とPC確認
 

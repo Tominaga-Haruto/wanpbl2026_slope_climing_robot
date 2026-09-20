@@ -96,7 +96,7 @@
 | 実行PC | **Windows ノートPC**。`C:\\Users\\harut\\Connect2USB2CAN` | 実行ログ |
 | Python | **ver8 は `py -3.13 motor_console_ver8.py`**（09-17 に 3.10 を追加してから `python` が 3.10 本体を指し `No module named 'can'`）。T265・onnxruntime は `.venv310` | 09-17 |
 | ライブラリ | python-can, interface=`gs_usb` | コード |
-| **CANチャンネル** | **`channel=1`** | ch=0 は `can.Bus()` が成功するのに通信できない |
+| **CANチャンネル** | **ch=0（左脚5軸）/ ch=1（右脚5軸）** | 2026-09-20にD7専用コンソールで両チャネルの10軸フィードバックと原点設定を確認。旧記述「ch=0は通信できない」は単一チャネルの`motor_console_ver8.py`による観測で誤り |
 | ビットレート | 1 Mbps | 通信成立で確認 |
 | 実測に使った個体 | **ID 34 (0x22)、AK80-9、LR_FFE**／**ID 18 (0x12)、AK10-9、LR_KFE** | 2026-09-07 までの記録は ID 43 (0x2B)。同一個体か別個体かは未確認 |
 
