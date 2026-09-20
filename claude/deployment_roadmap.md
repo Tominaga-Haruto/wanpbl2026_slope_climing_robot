@@ -14,7 +14,7 @@
 | D2 | ver9の方策非依存骨組み | 未実装 | なし | `deployment_02_ver9_shell_instruction.md` |
 | D3 | T265のbase原点補正 | **実験完了、ver9反映待ち** | なし | `deployment_03_t265_mount_instruction.md`、`realsense_t265.md` |
 | D4 | 全10モーターのH順対応表 | ID・機種・符号は確定、原点欄待ち | D7の結果で完成 | `deployment_04_joint_mapping_instruction.md`、`reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md` |
-| D5 | Jetsonのコントローラー50 Hz入力 | 未完了 | D1の`obs_contract.md`で指令軸を確定 | `controller_next_chat_briefing.md`、`deployment_05_controller_mapping_instruction.md` |
+| D5 | Jetsonのコントローラー50 Hz入力 | **直結では完了、実運用の延長経路で未完了** | D1の`obs_contract.md`で指令軸を確定 | `chats/2026-09-20_d5-extension-path-handoff.md`、`deployment_05_controller_mapping_instruction.md` |
 | D6 | ハードウェア構成の完全固定 | 未完了 | D3〜D5と並行可 | `next_chat_m5_all_joint_origin.md` |
 | D7 | 全10軸の原点設定・原点変換表 | 未完了 | **D6** | `deployment_05_m5_origin_instruction.md`、`next_chat_m5_all_joint_origin.md` |
 | D8 | ver9統合ループとPC上の50 Hz確認 | 未実装 | **D1, D2, D3, D4, D5, D7** | `deployment_06_h_integration_instruction.md`、`next_chat_m7_dry_loop.md` |
@@ -52,7 +52,9 @@
 
 - **すること:** Jetson上でコントローラーを50 Hzで読み、D1の`obs_contract.md`に従って左スティックを `vx, vy`、`wz=0`としてver9の入力境界へ渡す。
 - **前提:** D1の`obs_contract.md`。D2〜D4と並行可能。
-- **完了条件:** 50 Hzで速度指令をver9へ渡せる。抜線試験、デッドマン、非常停止ラッチ、入力途絶停止、変化率制限は含めない。
+- **直結で確認済み（2026-09-20、CAN/ONNX/T265/モーター未接続）:** Jetson通常ターミナルで、直結したSwitch 2 Pro（USB `045e:028e`、安定パス `/dev/input/by-id/usb-045e_XBOX_360_For_Windows_000000000001-event-joystick`）を専用venvの`evdev`で読んだ。`pad_probe.py`は中立約10秒を約20 ms周期でゼロ指令、左スティックの前後左右を `前=+vx`／`後=-vx`／`右=-vy`／`左=+vy`、`wz=0`として表示した。抜線は`Errno 19`・exit 3で検出し、再接続後は5秒間ゼロへ復帰した。
+- **実運用経路のブロック（2026-09-20）:** コード長のため必要な変換ケーブル経由では、`057e:2009`（Pro Controller）として列挙するが、カーネルが`can't set config #1, error -32`を繰り返して再接続する。`/dev/input`にゲームパッドは作られない。これはHID／`evdev`の問題より前のUSB設定失敗であり、D5は実運用の延長経路で未完了。直結と同じ`045e:028e`として安定認識するUSBデータ対応の延長経路を確保してから、同じ乾式試験を再実施する。
+- **境界:** 抜線時の`pad_probe.py`はゼロを送り続けるのではなく終了する。CANを送る統合ループでは、受け手側が入力途絶を検出してゼロ指令と安全停止を継続する必要がある。これはD8/D9の安全実装であり、D5では実機へ接続しない。
 
 ## 2. 構成固定と原点設定
 
