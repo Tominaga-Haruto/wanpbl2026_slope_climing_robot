@@ -11,13 +11,13 @@
 | ID | タスク | 現在地 | 直接の依存 | 指示書・正本 |
 |---|---|---|---|---|
 | D1 | Hデプロイ成果物 | **完了** | なし | `deployment_01_h_export_instruction.md` |
-| D2 | ver9の方策非依存骨組み | 未実装 | なし | `deployment_02_ver9_shell_instruction.md` |
-| D3 | T265のbase原点補正 | **実験完了、ver9反映待ち** | なし | `deployment_03_t265_mount_instruction.md`、`realsense_t265.md` |
+| D2 | ver9の方策非依存骨組み | **完了**（合成入力で50 Hz・42要素プレースホルダ・10予定角・CAN送信0を確認） | なし | `deployment_02_ver9_shell_instruction.md`、`deployment_02_ver9_shell_step_by_step.md` |
+| D3 | T265のbase原点補正 | **完了**（CADからtracking centerのbase座標を確定しver9既定値へ反映） | なし | `deployment_03_t265_mount_instruction.md`、`realsense_t265.md` |
 | D4 | 全10モーターのH順対応表 | **完了**（ID・機種・符号・基準姿勢でのゼロ対応を確定） | なし | `deployment_04_joint_mapping_instruction.md`、`reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md` |
-| D5 | Jetsonのコントローラー50 Hz入力 | **直結では完了、実運用の延長経路で未完了** | D1の`obs_contract.md`で指令軸を確定 | `chats/2026-09-20_d5-extension-path-handoff.md`、`deployment_05_controller_mapping_instruction.md` |
+| D5 | Jetsonのコントローラー50 Hz入力 | **完了**（Bluetooth実運用経路の再現可能な接続を確認） | なし | `reports/2026-09-20_d5-wireless-dry-run.md`、`controller_next_chat_briefing.md` |
 | D6 | ハードウェア構成の完全固定 | **完了**（D7実施時の最終構成を基準姿勢で固定） | なし | `d7_棒支持_全関節原点設定_実験手順.md` |
 | D7 | 全10軸の原点設定・原点変換表 | **完了**（10/10で設定後`0.0deg`・`err=0`） | なし | `d7_棒支持_全関節原点設定_実験手順.md`、`reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md`、`logs\\d7_origin\\session_20260920_183915.txt` |
-| D8 | ver9統合ループとPC上の50 Hz確認 | 未実装 | **D1, D2, D3, D4, D5, D7** | `deployment_06_h_integration_instruction.md`、`next_chat_m7_dry_loop.md` |
+| D8 | ver9統合ループ・D9用10軸送信器 | **完了（実機未実行）**。T265/CAN→42要素→ONNX→10軸MIT、停止フレームまで実装・乾式確認 | **D1, D2, D3, D4, D7** | `C:\Users\harut\Connect2USB2CAN\ver9_d8_sender.py`、`d9_吊り10軸MIT実験手順.md` |
 | D9 | 吊り状態での実機CAN統合 | 未実施 | **D8** | `next_chat_briefing_motor.md` §2・§4 |
 | D10 | 床に下ろして平地で速度指令を入れる | 未実施 | **D9** | `next_chat_briefing_motor.md` §4 |
 
@@ -29,16 +29,16 @@
 - **完了:** 成果物パッケージは受領・照合済み。再学習や追加の方策比較は不要。
 - **次へ渡すもの:** D5とD8が使う観測契約、ONNX、golden。
 
-### D2: ver9の方策非依存骨組みを作る
+### D2: ver9の方策非依存骨組みを作る（完了）
 
-- **すること:** T265、CANフィードバック、コントローラー入力を時刻付きスナップショットにまとめ、50 Hzの予定表を作る。ここではCAN送信・ONNX推論をしない。
-- **前提:** なし。D1/D3/D4/D5と並行可能。
-- **完了条件:** 1周期分の入力スナップショットと周期ログをPC上に出せる。
+- **完了:** `Connect2USB2CAN\ver9_shell.py` に、T265・CANフィードバック・固定速度指令を時刻付きスナップショットへまとめる50 Hz受信ループを実装した。42要素の未確定観測プレースホルダ、10要素の予定目標角、周期・overrun・各入力age・欠損CAN IDをCSVへ記録する。
+- **検証:** 合成入力で2秒・101周期、観測プレースホルダ42要素と予定目標角10要素が全行0、CAN送信0を確認。単体テスト4件が合格した。実機T265/CANは未接続。
+- **境界:** CAN送信、ONNX、H順変換、原点変換、ゲイン、コントローラー実デバイス読取は含めない。T265の`R_OFFSET`補正はD3、H順と原点変換はD4/D7、方策統合はD8で行う。
 
 ### D3: T265のtracking centerをbase原点へ補正する
 
-- **すること:** 既存の前向き・水平の `R_CB` と、CAD記録済みの `R_OFFSET` をver9へ入れ、tracking centerの速度をbase原点の速度へ変換する。
-- **完了済みの実機側:** T265は正面・水平に剛固定済み。開口に対して左・前へ詰め、取付け位置はCADに記録済み。既存CSVで座標・符号・200 Hz取得も確定済み。
+- **完了（2026-09-20）:** `004_sim` のwaistをSTEPで読み、CAD原点に対する外形を確認した。waist外形はCAD座標で右端 `x=-145.000 mm`、正面 `y=-70.000 mm`、下辺 `z=-25.000 mm`。既知の開口内tracking center（右端から左へ234.000 mm、下辺から上へ67.750 mm）と、T265の正面→tracking center 6.55 mm（厚み12.50 mm、背面から5.95 mm）から、CAD座標のtracking centerは `(x,y,z)=(+89.000,-63.450,+42.750) mm`。URDF後処理の変換 `(+X,+Y,+Z)_base=(-Y,+X,+Z)_CAD` により、**`R_OFFSET=(+0.06345,+0.08900,+0.04275) m`**（base原点→tracking center）と確定した。
+- **ver9:** `Connect2USB2CAN\\ver9_shell.py` の `T265_R_OFFSET_M` と `--t265-r-offset` の既定値へ反映済み。既存CSVの前向き・水平 `R_CB` と合わせ、`v_base=v_tracking-omega_base×R_OFFSET` を使う。
 - **前提:** なし。CSV再取得、取付け再測定、振動・confidence・途絶試験は行わない。
 - **次へ渡すもの:** D8が使う `R_CB` と `R_OFFSET`。
 
@@ -48,13 +48,12 @@
 - **完了:** ID・機種・符号は確定済み。D7で基準姿勢を全軸MITゼロに設定したため、原点値とH関節角の変換も全軸で確定した。
 - **次へ渡すもの:** D8が使う10軸変換表。
 
-### D5: Jetsonでコントローラー入力を50 Hzで読めるようにする
+### D5: Jetsonでコントローラー入力を50 Hzで読めるようにする（完了）
 
-- **すること:** Jetson上でコントローラーを50 Hzで読み、D1の`obs_contract.md`に従って左スティックを `vx, vy`、`wz=0`としてver9の入力境界へ渡す。
-- **前提:** D1の`obs_contract.md`。D2〜D4と並行可能。
-- **直結で確認済み（2026-09-20、CAN/ONNX/T265/モーター未接続）:** Jetson通常ターミナルで、直結したSwitch 2 Pro（USB `045e:028e`、安定パス `/dev/input/by-id/usb-045e_XBOX_360_For_Windows_000000000001-event-joystick`）を専用venvの`evdev`で読んだ。`pad_probe.py`は中立約10秒を約20 ms周期でゼロ指令、左スティックの前後左右を `前=+vx`／`後=-vx`／`右=-vy`／`左=+vy`、`wz=0`として表示した。抜線は`Errno 19`・exit 3で検出し、再接続後は5秒間ゼロへ復帰した。
-- **実運用経路のブロック（2026-09-20）:** コード長のため必要な変換ケーブル経由では、`057e:2009`（Pro Controller）として列挙するが、カーネルが`can't set config #1, error -32`を繰り返して再接続する。`/dev/input`にゲームパッドは作られない。これはHID／`evdev`の問題より前のUSB設定失敗であり、D5は実運用の延長経路で未完了。直結と同じ`045e:028e`として安定認識するUSBデータ対応の延長経路を確保してから、同じ乾式試験を再実施する。
-- **境界:** 抜線時の`pad_probe.py`はゼロを送り続けるのではなく終了する。CANを送る統合ループでは、受け手側が入力途絶を検出してゼロ指令と安全停止を継続する必要がある。これはD8/D9の安全実装であり、D5では実機へ接続しない。
+- **直結で確認済み（2026-09-20、CAN/ONNX/T265/モーター未接続）:** Jetson通常ターミナルで、直結したSwitch 2 Pro（USB `045e:028e`、安定パス `/dev/input/by-id/usb-045e_XBOX_360_For_Windows_000000000001-event-joystick`）を専用venvの`evdev`で読んだ。`pad_probe.py`は中立約10秒を約20 ms周期でゼロ指令、左スティックの前後左右を `前=+vx`／`後=-vx`／`右=-vy`／`左=+vy`、`wz=0`として表示した。抜線は`Errno 19`・exit 3で検出し、再接続後はゼロから起動した。
+- **実運用のBluetooth経路（2026-09-20、ユーザー確認）:** `Pro Controller`（Bluetooth HID `98:B6:E9:4A:87:92`、`057e:2009`）を登録削除からペアリング・信頼・接続まで繰り返し再現できた。Bluetoothでは`/dev/input/by-id`リンクを作らないため、接続ごとに`Uniq=98:b6:e9:4a:87:92`から`/proc/bus/input/devices`の現在の`eventN`を再検出する。手順は`reports/2026-09-20_d5-wireless-dry-run.md`が正本である。有線延長の`error -32`は未解決だが、Bluetooth採用後のD5をブロックしない。
+- **D8へ渡すもの:** Hの指令順序`(lin_vel_x, lin_vel_y, ang_vel_z)`、左スティックの前=`+vx`／後=`-vx`／右=`-vy`／左=`+vy`、`wz=0`、および接続ごとの`eventN`再検出手順。
+- **境界:** `pad_probe.py`は切断時に終了する。CANを送る統合ループでは、受け手側が入力途絶を検出してゼロ指令と安全停止を継続する必要がある。これはD8/D9の安全実装であり、D5では実機へ接続しない。
 
 ## 2. 構成固定と原点設定
 
@@ -78,9 +77,12 @@
 ### D8: ver9に観測・ONNX・CAN送信を統合し、50 Hzを確認する
 
 - **すること:** D3のT265補正とD7の原点変換表を組み込み、T265観測、10関節観測、D5の速度指令から42次元観測を作る。ONNXで10 actionを計算し、H順目標角から10 CAN指令へ変換する。PC上で計算の正しさと50 Hz周期を確認する。
-- **前提:** **D1, D2, D3, D4, D5, D7。** とくにD3の取付値とD7の原点変換表が無ければ、実機値を推測で組み込まない。
+- **前提:** **D1, D2, D3, D4, D7。** D5はコントローラーを使う場合だけ追加する。初回のPC統合は固定速度指令 `(0, 0, 0)` で進められる。とくにD3の取付値とD7の原点変換表が無ければ、実機値を推測で組み込まない。
 - **完了条件:** goldenによるONNX入出力の照合、H順10目標角からCAN順10指令への変換、50 Hz周期ログが確認できること。
 - **含めないもの:** 途絶停止処理、ソフトリミット、motor err処理、confidence判定などの安全機能。
+- **2026-09-21 完了:** `Connect2USB2CAN\ver9_integration.py` は42要素観測とCAN計画を作り、`ver9_d8_sender.py` はその計画を両CANの10軸mode 8 MITフレームへ変換して50 Hz送信する。H golden 500件の誤差はaction `1.1920929e-06`、目標角 `5.96046448e-07`。`--preview`、構文確認、17テストに合格。実機は未起動。
+- **D3の実機値の扱い:** `ver9_shell.py --t265` はCADで確定した `R_OFFSET=(+0.06345,+0.08900,+0.04275) m` を `T265_R_OFFSET_M` と `--t265-r-offset` の既定値にする。`v_base=R_CB^T v_tracking-omega_base×R_OFFSET` を適用し、D8の回帰試験はこの値で補正項を確認する。必要なら同オプションで明示上書きできるが、D9で入力し直す必要はない。
+- **D8送信器:** `ver9_d8_sender.py` は `--arm` がない限りCANを送信しない。T265の最初のposeを最大5秒待ち、10軸の新鮮なフィードバック、`err`、電流、速度を確認してから送信する。終了・例外時は零MITを3回送る。D9は `d9_吊り10軸MIT実験手順.md` の実行・判定だけを行う。
 
 ## 4. 実機で動かす
 
@@ -98,16 +100,18 @@
 ## 5. 依存関係だけを見る図
 
 ```text
-D1 ─┬─ D5 ─┐
+D1 ─┬──────┐
 D2 ─┤      │
-D3 ─┤      │
-D4 ─┤      ├─ D8 ─ D9 ─ D10
+D3 ─┤      ├─ D8 ─ D9 ─ D10
+D4 ─┤      │
 D6 ─ D7 ───┘
+
+D5 ───────── D8のコントローラー入力（任意）
 ```
 
 - D1〜D5はD6の前後を問わず並行可能。
 - **D7はD6の後にだけ行う。**
-- **D8はD1〜D5とD7がそろってから。**
+- **D8はD1〜D4とD7がそろってから。D5はコントローラーを使う場合だけ必要。**
 - **D10はD9で吊り状態の関節動作を確認してから。**
 
 ## 6. 初回デプロイ後に回す安全・堅牢化タスク（D1〜D10の前提ではない）
