@@ -26,7 +26,7 @@ cd C:\\Users\\harut\\Connect2USB2CAN
 .venv310\\Scripts\\python t265\\t265_check.py --raw
 ```
 - 表示（既定 10 Hz、`--hz`）: confidence、v_b / w_b / g_b（base 座標）、`--raw` で T265 の生の速度。Ctrl+C で終了、CSV は `t265\\logs\\t265_日付_時刻.csv`（t_host, frame, conf, 観測9個, 生の速度6個, translation）。
-- 冒頭の定数: `R_CB`（取り付け向き）、`R_OFFSET`（base 原点 → T265 tracking center、base 座標。ver9ではCAD記録から設定する）、`VEL_IN_WORLD`、`STALE_S` 0.05、`MIN_CONFIDENCE` 2。
+- 冒頭の定数: `R_CB`（取り付け向き）、`R_OFFSET`（base 原点 → T265 tracking center、base 座標。`t265_check.py` は0のまま、ver9は確定CAD値を使う）、`VEL_IN_WORLD`、`STALE_S` 0.05、`MIN_CONFIDENCE` 2。
 - **起動の癖と対策:**
   - 最初はブートローダとして見え、`pipe.start` が \"No device connected\" で数回失敗してから通る → pipeline を毎回作り直し＋serial 指定で最大 8 回再試行（2 秒おき）。
   - **同じ context で `query_devices` し直すと \"Unable to create USB device\" で全滅する**（09-17 に一度この版にして悪化、`.bak_v2`）。
@@ -63,14 +63,14 @@ g_b = R_CB^T · (R_wc^T · (0,−1,0))
 
 ## 5. 残作業
 
-T265の実験は完了している。ver9で、CAD記録済みのbase原点→tracking centerの `R_OFFSET` と既存の `R_CB` を使い、`v_b = R_CB^T · v_c − w_b × R_OFFSET` を適用する実装だけが残る。初回デプロイの前提に、再度の5動作、振動・衝撃、confidence・途絶の試験や、それらに応じたソフトウェア停止処理を置かない。停止手段は手元のモーター電源遮断とする。
+T265の実験とD3のCAD原点補正は完了している。ver9は既存の `R_CB` と確定値 `R_OFFSET=(+0.06345,+0.08900,+0.04275) m` を使い、`v_b = R_CB^T · v_c − w_b × R_OFFSET` を適用する。初回デプロイの前提に、再度の5動作、振動・衝撃、confidence・途絶の試験や、それらに応じたソフトウェア停止処理を置かない。停止手段は手元のモーター電源遮断とする。
 
 ## 6. 取付け位置のCAD記録（2026-09-20）
 
 - 正面は、waist前面のT265用長方形開口が向く方向とする。T265はレンズをこの正面へ向け、水平に固定する。
 - CADの外形基準では、waist下辺→開口下辺は55.000 mm、開口は高さ25.500 mm・幅154.000 mm、waist右辺→開口左辺は189.000 mmである。
 - 開口左辺から左右レンズ中心は13.000 / 77.000 mm。公式データシートの左右イメージャ間隔64.00 ± 0.15 mm、およびtracking centerが両イメージャの中点という定義と一致する。したがってtracking centerは開口左辺から45.000 mm、waist右端から234.000 mm、開口上下中央（waist下辺から67.750 mm）に置く。
-- T265は開口に対して左・前へ詰め、カメラ面を開口のbase前方向の面に合わせて剛固定済みである。前後位置を含む固定位置はCAD記録を正本とし、ver9がこの記録をbase原点基準の `R_OFFSET` に変換して使う。固定後の実測は不要である。
+- `004_sim` のwaist STEP外形では、CAD原点基準で右端 `x=-145.000 mm`、正面 `y=-70.000 mm`、下辺 `z=-25.000 mm`。T265前面を正面に合わせ、厚み12.50 mmとtracking centerの背面から5.95 mmを用いると、tracking centerはCAD座標で `(+89.000,-63.450,+42.750) mm`。URDF後処理の `(x,y,z)_base=(-y,x,z)_CAD` を適用した確定値は **`R_OFFSET=(+0.06345,+0.08900,+0.04275) m`**。固定後の実測は不要である。
 - 既存の前向き・水平の符号確認CSVは `C:\Users\harut\Connect2USB2CAN\t265\logs\t265_20260917_213011.csv` などにある。`R_CB` はその既定値を使い、5動作は再実施しない。
 
 出典: [librealsense v2.54.1 リリースノート](https://github.com/IntelRealSense/librealsense/releases/tag/v2.54.1) ／ [T265 ドキュメント（v2.53.1）](https://github.com/realsenseai/librealsense/blob/v2.53.1/doc/t265.md)
