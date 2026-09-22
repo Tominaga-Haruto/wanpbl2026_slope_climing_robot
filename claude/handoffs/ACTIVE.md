@@ -1,33 +1,39 @@
-# Active handoff — D9 0x1C 1軸追従停止の修正
+# Active handoff — D9-3 0x1C 不感帯を越える1軸診断（要承認）
 
 更新日: 2026-09-22
 
-## Claude Codeへの最初の依頼
+## Claude Code / Codex への最初の依頼
 
-「D9の0x1C追従停止を、追加の実機送信なしで診断・修正してください。CSVと実装を根拠に、ソフトウェアの不具合があるかを確認し、無ければ機構負荷と個体特性を切り分ける次の安全な1軸診断案を作ってください。Kp/Kd、目標角、トルクを根拠なく増やさず、片脚・全身MITへ進まないでください。」
+「`reports/2026-09-22_d9-0x1c-current-vs-error.md` を読んで、D9-3（要求角 6.5° の static probe 1回）の承認待ちの状態を確認してください。ユーザーが明示的に承認するまで実機送信はしません。承認前にできるのは、無通電の機構確認の整理、学習側の friction スイープの用意、実機を動かさない作業だけです。」
 
 ## 目的と完了条件
 
-0x1C（LL_HR、AK10-9）が位置追従しない原因を、通信／実装と機構・個体負荷に分ける。完了は、根拠付きの修正または次の1軸診断案、更新済み手順、報告書、対象限定commit/pushである。実機送信はユーザーが明示して安全条件を確認した場合だけである。
+0x1C（LL_HR、AK10-9）が「普通のスティクションで止まっている」のか「機構が異常で固まっている」のかを1回の通電試験で分ける。完了は、D9-3 の実行結果（CSV・画面ログ・動画）と判定、または承認が下りないまま無通電の機構確認だけを終えた状態である。
 
-## 確認済みの事実
+## 確認済みの事実（2026-09-22 に更新）
 
-- 最新CSV: `C:\Users\harut\Connect2USB2CAN\logs\d9_one_axis_0x1c.csv`。2026-09-22 18:41:33、402行（ramp 301 / policy 101）、全行`sent_motor_id=0x1C`、wire target最小−5.128°、位置−0.6°・速度0のまま、最大|電流|0.66 A。
-- 方策ランプ4回と、方策/T265を除いた相対−2.5°static probeで追従0°が再現した。CSV更新、ID→ch経路確定、MIT量子化、電流受信は成立している。
-- 現行送信器は`C:\Users\harut\Connect2USB2CAN\ver9_d8_sender.py`、build `D9_RAMP_20260922_1745`。1軸以外へMITを送らず、停止時は零MIT cleanupを行う。
-- 「現行実効PDトルクが吊り姿勢の負荷を越えない」と整合するが、CSVだけでは静止摩擦、干渉、支持具、ケーブル、重力モーメント、個体特性の内訳は決められない。
+- **MITトルク経路は正常と確定した。** 保存済み2本のCSVで `|I| = 8.20 / 8.31 A/rad × 位置誤差`、指令 Kp 7.937 に対し比 1.03 / 1.05、切片 0.02 A 未満。**MIT の Kp 欄は「1 rad あたりの電流[A]」として効く**（機種によらない）。根拠 `reports/2026-09-22_d9-0x1c-current-vs-error.md`。
+- **動かなかった理由は試験の設計。** 不感帯 = 動き出し電流 ÷ 指令Kp。0x1C は 0.66 A で動かないので不感帯は 4.8°以上。D9-2 の要求角は 4.52°（合格線 2.26°）、static probe は 2.5°（同 1.25°）で、**裸の AK80-9（動き出し 0.63 A、`actuator_params.md` §0）でも満たせない条件**だった。0x1C 固有の異常を示す数値は今のところ無い。
+- 電流中止 1.0 A のため、位置指令で探れる動き出し電流は 1.0 A まで＝**要求角 7.2° が上限**。それ以上は中止に当たるだけ。
+- `ver9_d8_sender.py` build `D9_DIAG_20260922_1930`: `TORQUE PATH` / `DEADBAND` 判定、送信前の `stall_guard`（静止実証済みの電流以下しか掛けられない実行を、MITフレームを出さずに中止）、実機なしの `--analyze <csv>`。ゲイン・目標角・トルク欄は変えていない。単体テスト31本 OK。
+- D7受信・ID→ch経路確定、D9 preflight、零MIT停止は実装済み。USBのPython ch番号は毎プロセス確定。
 
 ## 最初に読むもの
 
 1. `../CONTEXT.md`
-2. `../reports/2026-09-22_d9-0x1c-stall-analysis.md`
-3. `../motor_can_findings.md`
-4. `../reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md`
-5. 必要な範囲だけ`C:\Users\harut\Connect2USB2CAN\ver9_d8_sender.py`と最新CSV
+2. `../reports/2026-09-22_d9-0x1c-current-vs-error.md`
+3. `../d9_2_1軸MITランプ_実験手順.md` の「次の1軸診断（D9-3、要承認）」
+4. `../motor_can_findings.md`（MIT・原点・機種別係数）
+5. 必要な範囲だけ `C:\Users\harut\Connect2USB2CAN\ver9_d8_sender.py` と最新CSV
 
-## 安全境界と記録
+## 許可／禁止
 
-- 同じ方策ランプ／static probeの反復、Kp/Kd・目標角・トルク前置の増加、片脚／全身MITは行わない。
-- 追加の実機送信は行わない。無通電の目視・手回し確認を提案する場合も、主電源OFF・吊り支持維持を明記する。
-- CSV、生ログ、モデル、鍵はGitに入れない。実測の要約と絶対パスを`../reports/`へ記録する。
-- 作業後は`ACTIVE.md`と`../CONTEXT.md`を更新し、自分が触ったファイルだけをcommit/pushする。
+- **許可（承認不要）:** 無通電・主電源OFFでの目視と手回し確認、`--analyze` によるCSV再判定、学習側の friction スイープ、コントローラー乾式、文書更新。
+- **要ユーザー承認:** D9-3（`STATIC_PROBE_MAX_DEG` を 2.5 → 7.0 に変え、要求角 6.5° の static probe を1回）。承認は「吊り支持・電源遮断担当・同一通電中のD7 `oa`・preflight 済み」を確認した上で受ける。
+- **禁止:** D9-2 と同じ試験の再実行、Kp/Kd・トルク欄の増加、承認のない要求角の変更、片脚／全身MIT、床上デプロイ。`repeat-probe abort` をゲインや目標を上げて回避すること。
+
+## 実行環境と記録
+
+- 実機: `C:\Users\harut\Connect2USB2CAN`（`.venv310\Scripts\python.exe`）。学習: WRS機 `D:\Tominaga\slope-climbing-robot`。
+- CSV・生ログ・モデル・鍵はGitに入れない。要約と絶対パスを `../reports/` へ残す。
+- 作業後は `ACTIVE.md` と `../CONTEXT.md` を更新し、触ったファイルだけを commit / push する。
