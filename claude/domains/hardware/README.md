@@ -6,6 +6,6 @@
 - 関節ID・符号: `../../reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md`
 - アクチュエータ諸元: `../../actuator_params.md`
 - T265: `../../realsense_t265.md`
-- D9停止の最新根拠: `../../reports/2026-09-22_d9-0x1c-stall-analysis.md`
+- D9停止の最新根拠: `../../reports/2026-09-22_d9-0x1c-current-vs-error.md`（MITの Kp 欄は「1 radあたりの電流」。不感帯 = 動き出し電流 ÷ 指令Kp）
 
-現行の実機作業の禁止事項・次の一手は`../../handoffs/ACTIVE.md`が優先する。
+現行の実機作業の禁止事項・次の一手は、`../../CONTEXT.md`が名指しする引き継ぎ書が優先する。

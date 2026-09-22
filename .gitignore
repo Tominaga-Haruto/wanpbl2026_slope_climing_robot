@@ -43,3 +43,8 @@ isaac_env/
 
 # `claude/` 直下の旧ローカル指示。実際に読むのはルート AGENTS.md と AGENTS.override.md。
 claude/AGENTS.md
+
+# デプロイパッケージ（ONNX・重み）とエージェントの作業キャッシュ
+H_eff13p5_2999/
+**/deploy_pkg*/
+claude/.codex-build/

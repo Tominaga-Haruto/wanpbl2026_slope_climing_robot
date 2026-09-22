@@ -2,8 +2,9 @@
 
 二足歩行ロボットを Isaac Lab ＋ RSL-RL で歩かせ、最終的に坂を登らせるプロジェクト。
 
-**まず `project_handbook.md` を読むこと。** 現状・環境の注意点・結論・次にやることが全部そこにある。
-この README は「どこに何があるか」の索引。
+**まず `AGENTS.md` → `claude/PROJECT.md` → `claude/CONTEXT.md` → `CONTEXT.md`が名指しする`claude/handoffs/`の引き継ぎ書、の順に読むこと。** 現在地と次にやることはそこにある。
+`project_handbook.md` は旧来の入口で、いまは過去の詳細資料として残している（開始時には読まない）。
+この README は GitHub 上での「どこに何があるか」の索引。
 
 参考実装: Skyentific https://github.com/SkyentificGit/BipedalRobotSim
 
@@ -13,7 +14,7 @@
 
 | 目的 | 見るファイル |
 |---|---|
-| **毎回最初に読む** | `project_handbook.md` |
+| **毎回最初に読む** | `AGENTS.md` → `claude/PROJECT.md` → `claude/CONTEXT.md` → 名指しされた `claude/handoffs/…` |
 | どこに何があるか | この README |
 | 学習した方策を目で見たい | `docs/play_commands.md` |
 | どの run が何だったか | `docs/runs.md` |
