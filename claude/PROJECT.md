@@ -30,14 +30,22 @@ Isaac Labで学習した二足ロボットを、まず平地で安全に実機�
 
 | 欲しいもの | 入口 |
 |---|---|
-| ハードウェア・CAN・関節・原点の数値 | `domains/hardware/README.md` |
-| 方策の候補・評価・学習履歴 | `domains/policy/README.md` |
+| ハードウェア・CAN・関節・原点の数値 | `domains/hardware/README.md` → `reference/` |
+| 方策の候補・評価・学習履歴 | `domains/policy/README.md` → `reference/` |
 | コントローラー | `domains/controller/README.md` |
 | デプロイの段取り | `domains/deployment/README.md` |
 | 実機・評価の実行手順 | `procedures/README.md` |
+| WRS機・デプロイ作業への指示書 | `instructions/README.md` |
+| 数値・環境・コード構造の正本 | `reference/README.md` |
 | ある結論の根拠 | `reports/`（日付＋内容のファイル名） |
 | 過去のやり取り | `chats/`（日付＋内容のファイル名） |
+| 役目を終えた引き継ぎ・briefing・生ログ | `archive/`（**開始時に読まない**） |
 | 旧来の巨大な入口文書 | `legacy/`（**開始時に読まない**） |
+
+### フォルダの外にファイルを置かない
+
+`claude/` 直下に置いてよいのは `README.md`・`PROJECT.md`・`CONTEXT.md`・`AGENTS.override.md` の4つだけである。
+新しい文書は必ず上のどれかのフォルダに入れる。どれにも当てはまらないと思ったら、それは作らなくてよい文書である。
 
 ## 文書の更新ルール
 

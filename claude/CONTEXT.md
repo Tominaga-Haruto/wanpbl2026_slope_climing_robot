@@ -7,7 +7,7 @@
 **`handoffs/2026-09-23_d10-2_吊り全身MITから床上.md`**
 
 D9-6 完了（3軸とも判定 A、0x1C は正常）。**ユーザー判断で片脚MITと残り7軸の1軸 probe を飛ばし、吊り全身MIT → 床上へ一気に進む。** 手順は `procedures/d10_2_吊り全身MITから床上_実験手順.md`。次のチャットの最初の仕事は R0〜R2 の結果を切り分けること。
-実験11（WRS friction スイープ、`wrs_experiment11_friction_instruction.md`）は実機と独立に並行で回す。
+実験11（WRS friction スイープ、`instructions/wrs_experiment11_friction_instruction.md`）は実機と独立に並行で回す。
 
 ## 目的と共有方法
 
@@ -18,7 +18,7 @@ D9-6 完了（3軸とも判定 A、0x1C は正常）。**ユーザー判断で�
 ## 現在の優先順位
 
 1. **D10-2 R0〜R2（吊り・全10軸・承認不要）。** 手順 `procedures/d10_2_吊り全身MITから床上_実験手順.md`。R1 が通るまで床に下ろさない。**R3・R4（床上）は要ユーザー承認。**
-2. **実験11: WRS機で friction スイープ（評価のみ・学習なし）。** 指示は `wrs_experiment11_friction_instruction.md`。時間が無ければ「最短ルート」節の3条件（F1.0 / F3.0 / F5.0）だけでよい。実機と並行。
+2. **実験11: WRS機で friction スイープ（評価のみ・学習なし）。** 指示は `instructions/wrs_experiment11_friction_instruction.md`。時間が無ければ「最短ルート」節の3条件（F1.0 / F3.0 / F5.0）だけでよい。実機と並行。
 3. **立たせた基準姿勢で D7 の原点を取り直す。** D9-6 は支持具が無く、手でだいたいの初期姿勢に合わせて原点を取った。relative probe には効かないが、H のゼロ姿勢としては精度が落ちている。
 3. **HR の可動域を URDF／シムへ入れる。** 実測 外90° / 内45°（配線長）。URDF は ±π のまま。
 4. コントローラー乾式統合、方策Bの資格評価。
@@ -55,7 +55,7 @@ D9-6 完了（3軸とも判定 A、0x1C は正常）。**ユーザー判断で�
 |---|---|
 | 次の作業（引き継ぎ書） | `handoffs/2026-09-23_d10-2_吊り全身MITから床上.md` |
 | その実行手順 | `procedures/d10_2_吊り全身MITから床上_実験手順.md` |
-| 並行（学習側・実機不要） | `wrs_experiment11_friction_instruction.md` と `handoffs/2026-09-23_exp11_friction_sweep.md` |
+| 並行（学習側・実機不要） | `instructions/wrs_experiment11_friction_instruction.md` と `handoffs/2026-09-23_exp11_friction_sweep.md` |
 | **D9-6 の結果・不感帯の実測・バグ修正** | `reports/2026-09-22_d9-6_result.md` |
 | その実行手順（実施済み） | `procedures/d9_6_支持を直してHRとFFE_実験手順.md` |
 | D9-4／D9-5A（接触仮説。**D9-6 で取り下げ済み**） | `reports/2026-09-22_d9-4_result.md` |
@@ -63,12 +63,12 @@ D9-6 完了（3軸とも判定 A、0x1C は正常）。**ユーザー判断で�
 | D9-3 の結果と判定（不感帯 6.2° は保留） | `reports/2026-09-22_d9-3_result.md` |
 | D9-3 の実行手順（実施済み） | `procedures/d9_3_1軸ブレークアウェイ_実験手順.md` |
 | 電流＝Kp×誤差 の根拠 | `reports/2026-09-22_d9-0x1c-current-vs-error.md` |
-| CAN、ID、MITゲイン、原点 | `motor_can_findings.md` |
+| CAN、ID、MITゲイン、原点 | `reference/motor_can_findings.md` |
 | 関節対応と符号 | `reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md` |
-| アクチュエータ諸元 | `actuator_params.md` |
+| アクチュエータ諸元 | `reference/actuator_params.md` |
 | 方策の資格評価 | `reports/2026-09-22_exp10-autoturn-directturn-assessment.md` |
 
-読む順番と文書の更新ルールは `PROJECT.md`。`README.md`、`project_handbook.md`、`next_chat_*`、`chats/`は削除しないが、開始時には読まない。
+読む順番と文書の更新ルールは `PROJECT.md`。`README.md`、`legacy/project_handbook.md`、`next_chat_*`、`chats/`は削除しないが、開始時には読まない。
 
 ## 未整理（2026-09-22 時点）
 
