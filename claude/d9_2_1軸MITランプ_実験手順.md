@@ -58,6 +58,6 @@ cd C:\Users\harut\Connect2USB2CAN
 ```
 
 - 異音、接触、支持ずれ、`motion/current abort`、`stale feedback`、`motor error`なら、PC操作より先に主電源OFF。再試行・値の増加はしない。
-- `position tracking observed`なら、CSVと動画を保存して終了する。片脚・全身には進まない。
-- `position stalled under load`なら、0x1Cの静止摩擦または機構負荷が確認された状態である。値を上げず、CSVと動画を渡す。
+- `position tracking observed`は、0.1degだけでなく要求した相対角の50%以上を追従した場合だけ表示される。CSVと動画を保存して終了する。片脚・全身には進まない。
+- `position stalled before target`なら、0x1Cの静止摩擦または機構負荷で目標の途中に止まった状態である。値を上げず、CSVと動画を渡す。
 - `no position response and no meaningful current`なら、MITトルク応答が未確認である。値を上げず、配線・モード・個体状態の診断へ戻る。
