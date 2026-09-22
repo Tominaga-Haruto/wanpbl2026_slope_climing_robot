@@ -45,3 +45,19 @@ POLICY complete: CAN tx=...; sending selected-axis zero MIT cleanup.
 - `logs\d9_one_axis_0x1c.csv`
 - 画面ログと、支持・0x1C・周辺ケーブルが見える動画
 - 実行中の異音・動き・温度・abort有無
+
+## 追従なし後の小実験（0x1Cのみ）
+
+直近の方策ランプは量子化後 -2.12deg、最大 |電流|=0.33A で位置0.00degだった。次は方策とT265を外し、同じD9ゲインで相対 -2.5deg だけを確認する。これはゲイン・トルクを増やす試験ではない。
+
+開始条件は上記と同じで、吊り支持、遮断担当、同じ通電中のD7 `oa`、D9 preflight、0x1C周辺に干渉がないことを全て満たすこと。条件のどれかが欠ければ実行しない。
+
+```powershell
+cd C:\Users\harut\Connect2USB2CAN
+.venv310\Scripts\python.exe ver9_d8_sender.py --arm --static-probe --motor-id 0x1C --probe-target-deg -2.5 --ramp-seconds 6 --duration 2 --csv logs\d9_static_probe_0x1c.csv
+```
+
+- 異音、接触、支持ずれ、`motion/current abort`、`stale feedback`、`motor error`なら、PC操作より先に主電源OFF。再試行・値の増加はしない。
+- `position tracking observed`なら、CSVと動画を保存して終了する。片脚・全身には進まない。
+- `position stalled under load`なら、0x1Cの静止摩擦または機構負荷が確認された状態である。値を上げず、CSVと動画を渡す。
+- `no position response and no meaningful current`なら、MITトルク応答が未確認である。値を上げず、配線・モード・個体状態の診断へ戻る。
