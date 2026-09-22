@@ -38,7 +38,7 @@ POLICY complete: CAN tx=...; sending selected-axis zero MIT cleanup.
 - 完走しても片脚・全身へは進まない。
 - 完走時はCSVの`stage`が`ramp`→`policy`、`sent_motor_id`が全行`0x1C`であることを確認する。`requested_target_rad`は制限後の要求値、`wire_target_rad`は量子化してMITフレームへ入れた位置、`feedback_position_rad`・`feedback_velocity_rad_s`・`feedback_current_a`が受信した実測値である。
 - `desired_target_rad`が符号反転しても、`requested_target_rad`はランプ勾配を超えて跳ばないことを確認する。
-- `TRACKING`が0.1deg未満で`tracking abort`になったら、送信数の完走を成功扱いにしない。0x1C（AK10-9）の静止摩擦は未実測で、直近の約1.5deg指令は既知の脚付き不感帯（AK80-9で約1.4deg）と同程度である。目標値・ゲインをその場で増やさず、CSVと動画を渡して次の1軸試験を決める。
+- 方策ランプの`TRACKING`は、初期ランプ要求角の50%以上を追従しなければ`tracking abort`である。送信数の完走や0.1degだけの変化を成功扱いにしない。目標値・ゲインをその場で増やさず、CSVと動画を渡して次の1軸試験を決める。
 
 ## 次に渡すもの
 
