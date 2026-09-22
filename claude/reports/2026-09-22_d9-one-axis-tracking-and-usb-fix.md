@@ -37,3 +37,7 @@ static probe は0x1Cの現在フィードバックを基準にする相対指令
 同じ吊り姿勢で方策ランプも再実行された。0x1Cは -0.3deg から初期方策目標 -6.4deg（差 -6.1deg）へランプし、量子化後も -6.402degまで送信された。CSVは402行で、実測位置は最大 -0.6deg（開始から0.3deg）、最大 |電流|=0.81A、最大速度=10.79deg/sだった。旧buildは0.3degだけで成功扱いしたため誤りである。
 
 build `D9_RAMP_20260922_1745` は、方策ランプにも要求差の50%を追従条件として適用する。この実行なら必要移動は3.05degであり、0.3degでは `position stalled during initial policy ramp` として`tracking abort`になる。位置目標・Kp・Kdの自動増加はしない。
+
+最終の同build方策ランプを2回実行した。最終CSV（`C:\Users\harut\Connect2USB2CAN\logs\d9_one_axis_0x1c.csv`、Git非管理）は2回目の402行で、開始 -0.6deg、初期方策目標 -6.5deg、量子化後最小 -6.534deg、実測位置変化 0.000deg、最大|電流| 0.85A、最大|速度| 0.95deg/sだった。直前の1回目も開始 -0.3degから目標 -6.4degへ送信し、位置変化0.000deg、最大|電流|0.88Aだった。両方とも`position stalled during initial policy ramp`で`tracking abort`し、0x1Cの送信経路は実行ごとに受信から一意に確定していた。
+
+この結果により、同じD9方策ランプおよび同じstatic probeの再実行は保留する。次は実機送信をせず、CSV・AK10-9の実効ゲイン/摩擦記録・吊り姿勢の機構負荷を分析して、根拠のある次の1軸診断だけを別途決める。
