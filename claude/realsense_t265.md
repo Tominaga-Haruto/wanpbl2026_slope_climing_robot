@@ -9,7 +9,8 @@
 ## 1. 現在地
 
 - **IMU/姿勢センサは RealSense T265 で確定。** 観測から base_lin_vel を外した方策（H_nolinvel）は不採用なので、**T265 の速度は必須**（途絶検出と停止も必須）。
-- **2026-09-17: ノートPC（Windows）で pose を 200 Hz で取得でき、符号・座標系を確定した。** 何度挿し直しても起動する（ユーザー確認）。
+- **2026-09-17: ノートPC（Windows）で pose を 200 Hz で取得でき、符号・座標系を確定した。** `t265\\t265_check.py --raw` は2026-09-21にも3回連続で一発起動した。
+- **D9のT265起動ブロックは解消（2026-09-21）。** `RealT265.start()` がデバイス列挙用のcontextを保持したままpipelineを開いていたため、`No device connected` で失敗していた。成功版と同様にcontextを解放してから新規pipelineを開始し、起動直後の100 msフレーム待ちタイムアウトも継続待機に変更した。`RealT265`単体でpose取得まで確認済み。現在のブロックは別で、T265を物理接続した状態でUSB2CANを開くと、初回だけ片chになる／USB resetに失敗する。D7コンソールはT265を起動・読取していないため、T265のストリーム量ではなくUSB初期化・reset経路を切り分ける。正本は`d9_1_usb_t265_dualcan_受信実験手順.md`。
 - 機体: シリアル 15322110478、FW 0.2.0.951。
 
 ## 2. 環境（ノートPC）
@@ -32,6 +33,7 @@ cd C:\\Users\\harut\\Connect2USB2CAN
   - **同じ context で `query_devices` し直すと \"Unable to create USB device\" で全滅する**（09-17 に一度この版にして悪化、`.bak_v2`）。
   - 失敗後・抜き差しでネイティブ側がトレースバックなしに落ちることがある → 親プロセス（supervise）が子プロセスを最大 10 回起動し直す。
   - 受信は `wait_for_frames`（`poll_for_frames` ＋ sleep だと Windows で 70 Hz に落ちた）。
+- **D9の修正内容（2026-09-21）:** `ver9_shell.RealT265.start()` はserial取得後に列挙用`devices`と`ctx`を解放してから、毎回新規の`rs.pipeline()`を開始する。失敗したcandidateも再試行前に参照を解放する。受信ループは成功版と同じく`wait_for_frames(100)`のタイムアウトを致命扱いせず待機を継続する。ユニットテスト13件と`RealT265`単体のpose取得で確認済み。
 - バックアップ: `.bak_ver` `.bak_retry` `.bak_v2` `.bak_v3`。
 
 ## 4. 確定した変換（2026-09-17、`t265\\logs\\t265_20260917_213011.csv`）

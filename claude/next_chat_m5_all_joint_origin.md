@@ -25,16 +25,16 @@
 
 | H順 | ID (hex) | console `id` | 機種 |
 |---|---:|---:|---|
-| LL_HR | 0x13 | 19 | AK10-9 |
-| LR_HR | 0x1C | 28 | AK10-9 |
-| LL_HAA | 0x1B | 27 | AK10-9 |
-| LR_HAA | 0x11 | 17 | AK10-9 |
-| LL_HFE | 0x2A | 42 | AK80-9 |
-| LR_HFE | 0x21 | 33 | AK80-9 |
-| LL_KFE | 0x12 | 18 | AK10-9 |
-| LR_KFE | 0x1A | 26 | AK10-9 |
-| LL_FFE | 0x22 | 34 | AK80-9 |
-| LR_FFE | 0x2B | 43 | AK80-9 |
+| LL_HR | 0x1C | 28 | AK10-9 |
+| LR_HR | 0x13 | 19 | AK10-9 |
+| LL_HAA | 0x11 | 17 | AK10-9 |
+| LR_HAA | 0x1B | 27 | AK10-9 |
+| LL_HFE | 0x21 | 33 | AK80-9 |
+| LR_HFE | 0x2A | 42 | AK80-9 |
+| LL_KFE | 0x1A | 26 | AK10-9 |
+| LR_KFE | 0x12 | 18 | AK10-9 |
+| LL_FFE | 0x2B | 43 | AK80-9 |
+| LR_FFE | 0x22 | 34 | AK80-9 |
 
 ## 実行範囲と安全条件
 

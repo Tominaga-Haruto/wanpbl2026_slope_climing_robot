@@ -1,6 +1,6 @@
 # D11: Jetson・無線プロコンによる平地デプロイ実験手順
 
-> 構成は **Switch 2 Pro（Bluetooth）→ Jetson GPU → T265・USB2CAN×2 → ロボット** である。WRS PCとWindowsノートPCはD11の制御経路に入らない。Jetsonの`ver9_jetson_deploy.py`が50 Hzで42次元観測、GPU ONNX推論、10軸MIT送信を行う。
+> 構成は **Switch 2 Pro（Bluetooth）→ Jetson GPU → T265・ch=0/ch=1を公開するUSB2CAN V3.3 1台 → ロボット** である。WRS PCとWindowsノートPCはD11の制御経路に入らない。Jetsonの`ver9_jetson_deploy.py`が50 Hzで42次元観測、GPU ONNX推論、10軸MIT送信を行う。
 >
 > `--arm`を付けない限りCANは送信しない。通電後の終了・例外・T265異常・CAN異常・無線コントローラー読み取り失敗では、全10軸へ零MITフレームを3回送る。非常停止は主電源OFFであり、ソフト停止では代替しない。
 
@@ -26,10 +26,10 @@ Jetsonの`/home/wan-pbl-2026/robot_deploy`へ、次のソースを同じ階層�
 ## 2. 無通電の必須受入
 
 1. Bluetoothでプロコンを接続し、`Uniq=98:b6:e9:4a:87:92`から当日の`eventN`を取得する。`eventN`を固定値としてコードや手順へ保存しない。
-2. JetsonにT265と2本のUSB2CANを接続する。ただしロボット主電源はOFFのままにする。
+2. JetsonにT265と、ch=0/ch=1を公開するUSB2CAN V3.3 1台を接続する。ただしロボット主電源はOFFのままにする。
 3. `jetson_deploy_preflight.py`で、当日の`eventN`、Hデプロイパッケージ、GPU ONNXプロバイダを確認する。`providers`に`TensorrtExecutionProvider`または`CUDAExecutionProvider`が表示されなければ不合格である。CPU実行へ妥協しない。
 4. `ver9_jetson_deploy.py --preview`で、10ID、AK80-9のKp=28.571/Kd=2.867、AK80-9 FFEのKp=19.048/Kd=2.867、操作対応を確認する。プレビューはCANを送信しない。
-5. 各USB2CANに受信専用で接続し、左脚5IDと右脚5IDが意図したchannelに現れることを確認する。D7と異なる列挙なら、`--left-can-channel`と`--right-can-channel`へ実測値を渡す。ID・配線を推測で入れ替えない。
+5. USB2CANの両chへ受信専用で接続し、10軸すべてが一意に見えることを確認する。reset後にch=0/1が入れ替わるため、脚ごとの固定chは要求しない。`ver9_jetson_deploy.py`は開始後に受信IDから経路を確定し、確定前にMITを送らない。ID・配線を推測で入れ替えない。
 
 この5項目のうち一つでも不合格なら、D11を始めない。
 

@@ -32,4 +32,4 @@
 | アクチュエータ諸元 | `actuator_params.md` |
 | 方策の資格評価 | `reports/2026-09-22_exp10-autoturn-directturn-assessment.md` |
 
-`README.md`、`project_handbook.md`、`next_chat_*`、`chats/`は削除しない。過去の根拠・詳細手順として残すが、現在地の入口は`START_HERE.md`、`CONTEXT.md`、`handoffs/ACTIVE.md`へ統一した。
+`README.md`、`project_handbook.md`、`next_chat_*`、`chats/`は削除しない。過去の根拠・詳細手順として残すが、現在地の入口は`PROJECT.md`、`CONTEXT.md`、`handoffs/ACTIVE.md`へ統一した。

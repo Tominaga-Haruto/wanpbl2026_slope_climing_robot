@@ -1,5 +1,5 @@
 # 2026-09-20 D5 延長経路のUSB設定失敗
-
+README.mdは最低限見て。
 ## やったこと
 
 - Jetson通常ターミナルで、Switch 2 Proを直結した場合のD5乾式確認を完了した。`045e:028e`、`/dev/input/by-id/usb-045e_XBOX_360_For_Windows_000000000001-event-joystick`、`event7`で、50 Hzの中立・前後左右・抜線・再接続をCAN等未接続で確認済み。
