@@ -1,12 +1,12 @@
 # 指示書 実験01: カニ歩き・立ち往生の切り分け（WRS機の Claude Code に貼る）
 
-> 作成 2026-09-16。**WRS機の Claude Code の新チャットで、`instructions/wrs_training_operator_instruction.md` を貼って §8 の確認が終わった後に、下のコードブロックを丸ごと貼る。**
+> 作成 2026-09-16。**WRS機の Claude Code の新チャットで、`instructions/inactive/wrs_training_operator_instruction.md` を貼って §8 の確認が終わった後に、下のコードブロックを丸ごと貼る。**
 > 設計の根拠は `reference/crab_standstill_countermeasures.md`、ランの記録は `reference/training_runs.md`。
 
 ```
 # 指示: 実験01 カニ歩き・立ち往生の切り分け（約6時間・GPU占有）
 
-最初に貼った指示書（instructions/wrs_training_operator_instruction.md）の掟と作法はすべて有効。以下はその上での今回の作業。
+最初に貼った指示書（instructions/inactive/wrs_training_operator_instruction.md）の掟と作法はすべて有効。以下はその上での今回の作業。
 ユーザーは今から約6時間、この GPU を学習で占有することを了承済み。ただし開始時に nvidia-smi で他人のプロセスが GPU を使っていたら、何も起動せず報告して止まること。
 
 ## 目的

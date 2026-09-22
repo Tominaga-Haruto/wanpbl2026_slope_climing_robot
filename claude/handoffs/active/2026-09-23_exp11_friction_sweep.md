@@ -1,14 +1,14 @@
 # 引き継ぎ: 実験11 friction スイープの結果を切り分ける
 
-作成 2026-09-22 / 対象: 次のチャット / 前任: D9-6（`../reports/2026-09-22_d9-6_result.md`、完了）
+作成 2026-09-22 / 対象: 次のチャット / 前任: D9-6（`../../reports/2026-09-22_d9-6_result.md`、完了）
 
 ## この引き継ぎの最初の仕事
 
-**ユーザーが WRS機で回した実験11（friction スイープ）の報告を貼る。それを `../wrs_experiment11_friction_instruction.md` の判定表（A/B/C/D）で切り分け、次の一手にする。**
+**ユーザーが WRS機で回した実験11（friction スイープ）の報告を貼る。それを `../../instructions/active/wrs_experiment11_friction_instruction.md` の判定表（A/B/C/D）で切り分け、次の一手にする。**
 
 最初の依頼文（そのまま使える）:
 
-> 実験11（friction スイープ）の報告を貼ります。`instructions/wrs_experiment11_friction_instruction.md` の判定表で切り分けて、次の一手にしてください。時間が無いので飛ばし気味で進めたい。実機のゲイン・トルク欄・電流中止は上げないでください。
+> 実験11（friction スイープ）の報告を貼ります。`instructions/active/wrs_experiment11_friction_instruction.md` の判定表で切り分けて、次の一手にしてください。時間が無いので飛ばし気味で進めたい。実機のゲイン・トルク欄・電流中止は上げないでください。
 
 ## 状況（これだけ分かっていればよい）
 
@@ -54,4 +54,4 @@
 
 ## 記録
 
-CSV・生ログ・重み・鍵はGitに入れない。実測の要約と絶対パスを `../reports/` に残す。作業後は `../CONTEXT.md` と次の引き継ぎ書を同じcommitで更新する。
+CSV・生ログ・重み・鍵はGitに入れない。実測の要約と絶対パスを `../../reports/` に残す。作業後は `../../CONTEXT.md` と次の引き継ぎ書を同じcommitで更新する。

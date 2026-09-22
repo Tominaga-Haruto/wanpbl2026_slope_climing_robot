@@ -8,7 +8,7 @@
 # 指示: 実験04 停止点1 の講評と追加作業（停止点2 は予定どおり ＋ P5）
 
 停止点1 の報告ありがとう。import onnx の順番の件と報告書の直し3点は助かった。
-前の指示（instructions/wrs_training_operator_instruction.md の掟、実験03 の「更新」、実験04 の「やらないこと」）はすべて有効。起動は _launch.ps1 / _eval.ps1 / _play.ps1。
+前の指示（instructions/inactive/wrs_training_operator_instruction.md の掟、実験03 の「更新」、実験04 の「やらないこと」）はすべて有効。起動は _launch.ps1 / _eval.ps1 / _play.ps1。
 GPU の占有はユーザーが 2026-09-17 13:00 まで了承。開始時に nvidia-smi で他人の計算プロセスがあれば、何も起動せず報告して止まる。
 
 ## 0. P4 の2本目について

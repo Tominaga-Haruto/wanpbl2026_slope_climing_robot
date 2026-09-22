@@ -9,7 +9,7 @@
 # 指示: 停止点5a の講評と、実験06（その場旋回を直す学習 2本 ＋ ハングの切り分け。停止点6a・6b・6c）
 
 停止点5a ありがとう。その場旋回の指令が全体の 0.38% しか出ていないこと、足上げ報酬の判定が並進だけ（rewards.py:40）なのを行番号つきで出してくれたので、直す場所が決まった。
-前の指示（instructions/wrs_training_operator_instruction.md の掟、実験03〜05 の「更新」と「やらないこと」）はすべて有効。起動は _launch.ps1 / _eval.ps1 / _play.ps1。GPU はユーザー了承済み（期限なし）。開始時に nvidia-smi で他人の計算プロセスがあれば、何も起動せず報告して止まる。
+前の指示（instructions/inactive/wrs_training_operator_instruction.md の掟、実験03〜05 の「更新」と「やらないこと」）はすべて有効。起動は _launch.ps1 / _eval.ps1 / _play.ps1。GPU はユーザー了承済み（期限なし）。開始時に nvidia-smi で他人の計算プロセスがあれば、何も起動せず報告して止まる。
 
 ## 報告書への指摘（先に直す）
 - T0-1 の報酬の表は、コードの既定値に見える。G_real_peak / H_eff13p5 は B_combined と同じ起動行（feet_air_time w0・feet_air_time_biped w0.25・track_lin_vel_xy_exp の std 0.35）で学習しているはず。「env.yaml でも確認」と書いてあるが、表の weight 2.0 / 0.0 と std 0.5 はそれと合わない。

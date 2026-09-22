@@ -4,10 +4,20 @@
 
 ## 👉 いま有効な引き継ぎ書
 
-**`handoffs/2026-09-23_d10-3_吊り保持測定.md`**
+**`handoffs/active/2026-09-23_d10-3_吊り保持測定.md`**
 
 **D10-2 は失敗。全5本が ramp 中に `motion/current abort` で落ちた。原因は方策でも軸の故障でもなく、電流中止 1.0 A がこの機体の自重より小さいこと。** 根拠 `reports/2026-09-23_d10-2_result.md`。次は方策を回さず、**吊りのまま「その場保持」で軸ごとの必要電流を実測する**（`procedures/d10_3_吊り保持測定_実験手順.md`）。次のチャットの最初の仕事は R0・R1 の結果を切り分けること。
-実験11（WRS friction スイープ、`instructions/wrs_experiment11_friction_instruction.md`）は実機と独立に並行で回す。
+実験11（WRS friction スイープ、`instructions/active/wrs_experiment11_friction_instruction.md`）は実機と独立に並行で回す。
+
+## 学習側の現在地（2026-09-23 夜）
+
+- **今夜（約10時間）は実験12の2本を前景で回す。** 指示 `instructions/active/wrs_experiment12_friction_dr_overnight_instruction.md`。どちらも「親の設定そのまま＋関節 friction の DR を ×1.0〜4.0」だけを変える。
+  - **X12a**: H_eff13p5@2999（第一回実機候補）から再開。実機の不感帯（シムの 1.7〜3.1 倍）に耐える版を作る。
+  - **X12b**: L_angstd_w1@4000（`2026-09-17_21-18-22_L_angstd_w1`）から再開。その場旋回に合格した H 派生（S6 +0.268 / S9 −0.353 rad/s、転倒0、64 env）。旋回も持つデプロイ候補を作る。4498 で旋回が崩れた前例があるので 200 iter ごとに保存して点で選ぶ。
+- **B 系（B_continue / B_lateral10 @40006）は延長しない。** 見た目は「旋回しようとして抵抗し、横歩きになる」、立往生あり。plane で延長すると坂の能力も落ちた。
+- **坂は後回し。** 10°の坂で転倒せず登れたのは rough＋カリキュラムの4本だけで、最良は B_direct_wz_turn_H20000@25000（20 s で 6.7 m、転倒0、立往生6%）。後半ほど坂で横を向く。坂の段階に入るときはここを親の第一候補にする。根拠 `reports/2026-09-23_学習H以降の棚卸し.md`。
+- **旋回の重み（track_ang_vel_z_exp）を上げても横歩きは直らない見込み。** 0.5→1.0→1.5 で改善したのは yaw 追従だけだった。旋回中の横ずれを抑えるのは並進追従の幅（std 0.5 が緩い）の方で、旋回への抵抗は `joint_deviation_hip` が HR（股のひねり）を罰していることと `feet_slide` が候補（推測・未検証）。
+- WRS機の CLI には自己完結プロンプトを渡し、学習・評価はユーザーが前景で回す（`../AGENTS.md`「WRS機 CLI の運用」）。CLI 側の整理は `instructions/active/wrs_cli_refactor_instruction.md`。
 
 ## 目的と共有方法
 
@@ -19,7 +29,7 @@
 
 1. **D10-3 R0・R1（吊り・`--hold-pose`・既定中止 1.0 A のまま・承認不要）。** 手順 `procedures/d10_3_吊り保持測定_実験手順.md`。R1 は**落ちるのが正解**で、それが「1.0 A が原因」を所見から測定に変える。**R2（`--gravity-limits`）・R3・R4 は要ユーザー承認。**
 2. **立たせた基準姿勢で D7 の原点を取るための支持治具。床上デプロイの前提条件に格上げした。** D10-2 では前の run で垂れた姿勢のまま `oa` が打たれ、ゼロ姿勢が回ごとに 20〜30° 動いていた。方策の観測量はこの原点からの関節角なので、原点が動けば方策は毎回ちがうロボットを見ている。
-3. **実験11: WRS機で friction スイープ（評価のみ・学習なし）。** 指示は `instructions/wrs_experiment11_friction_instruction.md`。時間が無ければ「最短ルート」節の3条件（F1.0 / F3.0 / F5.0）だけでよい。実機と並行。
+3. **実験12（今夜の学習2本、上の節）と実験11: WRS機で friction スイープ（評価のみ・学習なし）。** 指示は `instructions/active/wrs_experiment11_friction_instruction.md`。時間が無ければ「最短ルート」節の3条件（F1.0 / F3.0 / F5.0）だけでよい。実機と並行。
 4. **床上の電流中止値は D10-3 R2 の実測表から決める。** 推定で決めない。D10-2 の失敗はそこである。
 5. **HR の可動域を URDF／シムへ入れる。** 実測 外90° / 内45°（配線長）。URDF は ±π のまま。
 6. コントローラー乾式統合、方策Bの資格評価。
@@ -48,6 +58,11 @@
 - モーターの原点は電源断をまたぐと仮定しない。MITは機械ゼロ姿勢でD7を済ませた同一通電中だけ扱う。
 - JetsonのコントローラーD5乾式確認は完了。CAN/T265/方策への実機統合は未完了。
 
+## シムの数値の確認（2026-09-23、`my_robot_code/skyentific_poclegs.py` と `rough_env_cfg.py`）
+
+- **初期姿勢:** HR 0、HAA 0、HFE −0.1745 rad（−10°）、KFE +0.3491 rad（+20°）、FFE −0.1745 rad（−10°）、胴体高さ 0.375776 m。リセット時に `reset_joints_by_scale` で関節角を ×0.5〜1.5 する（0 の HR・HAA は 0 のまま）。行動は「この姿勢＋0.5×行動」の目標角。WRS機の実体はハードリンクで同じファイルのはずだが、run ごとの実効値は各 run の `params/env.yaml` が正。
+- **トルクのスケール:** ゲインは合わせてある。指令Kp = stiffness ÷ c_p、指令Kd = damping ÷ c_d（AK80-9 0.523 / AK10-9 1.258・1.216、実測）で、例えば HR は 7.95 A/rad × 1.258 = 10.0 N·m/rad ＝ シムの stiffness 10。**合っていないのは3つ:** ① 物理 N·m との絶対換算（Kt）が未測定、② 実機の摩擦がシムの 1.7〜3.1 倍（実験11・12）、③ 実機の電流中止 1.0 A がトルク上限として効いていて、シムの effort 上限（53 / 13.5 N·m）の数%しか出せない（D10-2 の失敗原因）。シムの `friction` が N·m として効いているかは実験12の P1 で確かめる。
+
 ## 学習側への持ち帰り（実機不要・最優先）
 
 実機の位置不感帯はデプロイゲインで **HR 4.55〜6.50°、FFE 2.17°**。シムの `friction`（AK80-9実測 0.22 N·m）が意味する 0.9〜1.3° の **2〜5倍**である。H_eff13p5 の頑健性スイープに friction を振った条件が無いので、**WRS機で friction 3〜5倍のスイープ**を回して H_eff13p5@2999 の可否を見る。電流中止を直した後に、不感帯が歩容を壊すかが初めて実機で見られる。
@@ -56,11 +71,13 @@
 
 | 項目 | 読むファイル |
 |---|---|
-| 次の作業（引き継ぎ書） | `handoffs/2026-09-23_d10-3_吊り保持測定.md` |
+| 次の作業（引き継ぎ書） | `handoffs/active/2026-09-23_d10-3_吊り保持測定.md` |
 | その実行手順 | `procedures/d10_3_吊り保持測定_実験手順.md` |
 | **D10-2 の失敗分析・自重と中止値の数値** | `reports/2026-09-23_d10-2_result.md` |
 | その実行手順（取り下げ済み） | `procedures/d10_2_吊り全身MITから床上_実験手順.md` |
-| 並行（学習側・実機不要） | `instructions/wrs_experiment11_friction_instruction.md` と `handoffs/2026-09-23_exp11_friction_sweep.md` |
+| 今夜の学習（実験12） | `instructions/active/wrs_experiment12_friction_dr_overnight_instruction.md` |
+| 学習H以降の棚卸し（坂評価・報酬の差分） | `reports/2026-09-23_学習H以降の棚卸し.md` |
+| 並行（学習側・実機不要） | `instructions/active/wrs_experiment11_friction_instruction.md` と `handoffs/active/2026-09-23_exp11_friction_sweep.md` |
 | D9-6 の結果・不感帯の実測 | `reports/2026-09-22_d9-6_result.md` |
 | D9-4／D9-5A（接触仮説。D9-6 で取り下げ済み） | `reports/2026-09-22_d9-4_result.md` |
 | D9-3 の結果と判定 | `reports/2026-09-22_d9-3_result.md` |

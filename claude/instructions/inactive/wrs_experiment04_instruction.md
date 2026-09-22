@@ -1,14 +1,14 @@
 # 指示書 実験04: デプロイ候補（G_real_peak）の頑健性チェック ＋ ONNX 検証 ＋ 保険の学習（WRS機）
 
 > 作成 2026-09-16 深夜。実験03 の最終報告（`tools\\logs\\REPORT_exp03_final.md`、要点は `reference/training_runs.md` と `archive/next_chat_briefing.md` §1）を受けて。
-> **実験03 と同じ WRS チャットに続けて貼ってよい。** 新しいチャットにする場合は、`instructions/wrs_training_operator_instruction.md` → 実験03 の指示書の「更新」節 → 下のコードブロックの順に貼る。
+> **実験03 と同じ WRS チャットに続けて貼ってよい。** 新しいチャットにする場合は、`instructions/inactive/wrs_training_operator_instruction.md` → 実験03 の指示書の「更新」節 → 下のコードブロックの順に貼る。
 > 設計の考え方: デプロイ候補は上限が実機 MIT 上限と一致する G_real_peak。実機とのずれ（Kt 未決で実トルクが約 0.7 倍の可能性、Kp・Kd 換算誤差、遅延の揺れ、暫定の friction）を**まず評価だけ**で確かめ、並行して保険の学習（観測から base_lin_vel を外す H_nolinvel と、スイープ結果で選ぶ1本）を回す。
 
 ```
 # 指示: 実験04 デプロイ候補の頑健性チェック ＋ ONNX 検証 ＋ 保険の学習
 
 実験03 の報告ありがとう。h5py の原因特定と measure_crab.py の評価バグの発見は大きい。
-最初に貼った指示書（instructions/wrs_training_operator_instruction.md）の掟・作法と、実験03 の指示の「更新」はすべて有効。起動は必ず conda activate 込みの _launch.ps1 / _eval.ps1 / _play.ps1 で行う。
+最初に貼った指示書（instructions/inactive/wrs_training_operator_instruction.md）の掟・作法と、実験03 の指示の「更新」はすべて有効。起動は必ず conda activate 込みの _launch.ps1 / _eval.ps1 / _play.ps1 で行う。
 ユーザーは今夜〜明朝、この GPU を占有することを了承済み。開始時に nvidia-smi で他人の計算プロセスがあれば、何も起動せず報告して止まる。
 
 ## 方針（Cowork 側の判断）

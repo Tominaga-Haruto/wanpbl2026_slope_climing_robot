@@ -1,6 +1,6 @@
 # 指示書 実験02 P3（改訂版）: 旋回・rough への移行・姿勢保持の診断（WRS機に貼る）
 
-> 作成 2026-09-16 13:30。`instructions/wrs_experiment02_instruction.md` の P3 を**差し替える**。停止点1の報告（C_flatonly が 2400 で歩いた、rel_heading_envs の件、action 0 で前に倒れる）を受けて改訂。
+> 作成 2026-09-16 13:30。`instructions/inactive/wrs_experiment02_instruction.md` の P3 を**差し替える**。停止点1の報告（C_flatonly が 2400 で歩いた、rel_heading_envs の件、action 0 で前に倒れる）を受けて改訂。
 > 根拠は `reference/crab_standstill_countermeasures.md` §5。
 
 ```

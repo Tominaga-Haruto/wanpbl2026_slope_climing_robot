@@ -298,7 +298,7 @@ G_real_peak の 2400 と 3000 iter 目で、16 通りの条件を試した。
 **その他:**
 
 - 未 push のコミット: `664105a` `0a434a7` `5f3a487` `d4149ec` `3382cf8` `d8b2db3`、それに停止点4 までに増える分。ユーザーが WRS機の PowerShell で push する。
-- 更新が遅れている文書: `legacy/project_handbook.md` の A5 / A7、`instructions/wrs_training_operator_instruction.md` §6、`reference/actuator_params.md` §0c。
+- 更新が遅れている文書: `legacy/project_handbook.md` の A5 / A7、`instructions/inactive/wrs_training_operator_instruction.md` §6、`reference/actuator_params.md` §0c。
 
 ---
 

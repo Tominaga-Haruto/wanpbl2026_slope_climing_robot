@@ -55,7 +55,7 @@ dir : Cannot find path 'D:\\Tominaga\\slope-climbing-robot\\claude' because it d
 
 **Tier 3 ── 経緯の保存。1週間の作業には要らない**
 
-`chats/*`（24 本）、`wrs_experiment01〜09_instruction.md`、旧版（`instructions/urdf_reexport_instruction.md`, `instructions/wrs_pc_operator_instruction.md`, `archive/mit_implementation_briefing.md`, `instructions/alienware_repair_instruction.md`, `instructions/wrs_pc_host_instruction.md`, `archive/wrs_new_chat_start.md`, `instructions/wrs_overnight_20260918_instruction.md`, `reference/isaaclab_edit_guide.md`, `instructions/onshape_cad_fix_instruction.md`）
+`chats/*`（24 本）、`wrs_experiment01〜09_instruction.md`、旧版（`instructions/inactive/urdf_reexport_instruction.md`, `instructions/inactive/wrs_pc_operator_instruction.md`, `archive/mit_implementation_briefing.md`, `instructions/inactive/alienware_repair_instruction.md`, `instructions/inactive/wrs_pc_host_instruction.md`, `archive/wrs_new_chat_start.md`, `instructions/inactive/wrs_overnight_20260918_instruction.md`, `reference/isaaclab_edit_guide.md`, `instructions/inactive/onshape_cad_fix_instruction.md`）
 
 ### 1c. 取り出し方（安い順）
 

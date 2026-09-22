@@ -1,8 +1,8 @@
 # WRS共用PC の Isaac Lab 環境（構築完了記録）
 
-> 作成 2026-09-15。WRS機上の Claude Code が `instructions/wrs_pc_host_instruction.md` に沿って構築し、その完了報告をもとに書いた。
-> **この機体で柱Aを進めるときの「今の正しい状態」。** 構築手順そのものは `instructions/wrs_pc_host_instruction.md`。
-> 2026-09-15 夜: 再エクスポート作業（`instructions/wrs_urdf_reexport_instruction.md`）の停止点A の報告で、シェル構成と証明書の変数名が判明したので §3-1・§4 を更新。
+> 作成 2026-09-15。WRS機上の Claude Code が `instructions/inactive/wrs_pc_host_instruction.md` に沿って構築し、その完了報告をもとに書いた。
+> **この機体で柱Aを進めるときの「今の正しい状態」。** 構築手順そのものは `instructions/inactive/wrs_pc_host_instruction.md`。
+> 2026-09-15 夜: 再エクスポート作業（`instructions/inactive/wrs_urdf_reexport_instruction.md`）の停止点A の報告で、シェル構成と証明書の変数名が判明したので §3-1・§4 を更新。
 
 ---
 

@@ -10,10 +10,10 @@
 
 | ID | タスク | 現在地 | 直接の依存 | 指示書・正本 |
 |---|---|---|---|---|
-| D1 | Hデプロイ成果物 | **完了** | なし | `instructions/deployment_01_h_export_instruction.md` |
-| D2 | ver9の方策非依存骨組み | **完了**（合成入力で50 Hz・42要素プレースホルダ・10予定角・CAN送信0を確認） | なし | `instructions/deployment_02_ver9_shell_instruction.md`、`instructions/deployment_02_ver9_shell_step_by_step.md` |
-| D3 | T265のbase原点補正 | **完了**（CADからtracking centerのbase座標を確定しver9既定値へ反映） | なし | `instructions/deployment_03_t265_mount_instruction.md`、`reference/realsense_t265.md` |
-| D4 | 全10モーターのH順対応表 | **完了**（ID・機種・符号・基準姿勢でのゼロ対応を確定） | なし | `instructions/deployment_04_joint_mapping_instruction.md`、`reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md` |
+| D1 | Hデプロイ成果物 | **完了** | なし | `instructions/inactive/deployment_01_h_export_instruction.md` |
+| D2 | ver9の方策非依存骨組み | **完了**（合成入力で50 Hz・42要素プレースホルダ・10予定角・CAN送信0を確認） | なし | `instructions/inactive/deployment_02_ver9_shell_instruction.md`、`instructions/inactive/deployment_02_ver9_shell_step_by_step.md` |
+| D3 | T265のbase原点補正 | **完了**（CADからtracking centerのbase座標を確定しver9既定値へ反映） | なし | `instructions/inactive/deployment_03_t265_mount_instruction.md`、`reference/realsense_t265.md` |
+| D4 | 全10モーターのH順対応表 | **完了**（ID・機種・符号・基準姿勢でのゼロ対応を確定） | なし | `instructions/inactive/deployment_04_joint_mapping_instruction.md`、`reports/2026-09-20_d4-m5-joint-map-and-origin-procedure.md` |
 | D5 | Jetsonのコントローラー50 Hz入力 | **完了**（Bluetooth実運用経路の再現可能な接続を確認） | なし | `reports/2026-09-20_d5-wireless-dry-run.md`、`archive/controller_next_chat_briefing.md` |
 | D6 | ハードウェア構成の完全固定 | **完了**（D7実施時の最終構成を基準姿勢で固定） | なし | `procedures/d7_棒支持_全関節原点設定_実験手順.md` |
 | D7 | 全10軸の原点設定・原点変換表 | **通電ごとに再実施必須**（AK80を含む全身は電源断後に原点再利用不可） | D6、D9直前の同一通電 | `procedures/d7_棒支持_全関節原点設定_実験手順.md`、`chats/2026-09-21_d7-rework-and-d9-debug-handoff.md` |

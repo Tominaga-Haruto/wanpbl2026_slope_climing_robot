@@ -1,6 +1,6 @@
 # 指示書: Onshape 再エクスポートで機体を作り直す（WRS共用PC の Claude Code 向け）
 
-> 作成 2026-09-15。旧版 `instructions/urdf_reexport_instruction.md`（Alienware / Ubuntu 前提）を **WRS機（Windows 11）用に作り直したもの。**
+> 作成 2026-09-15。旧版 `instructions/inactive/urdf_reexport_instruction.md`（Alienware / Ubuntu 前提）を **WRS機（Windows 11）用に作り直したもの。**
 > **読み手の Claude Code はこれまでの経緯を知らない前提で書いてある。必要な情報はこの文書に全部入れた。**
 > 事前に、クラウド側で GitHub の中身と onshape-to-robot 1.8.3 のソースを読んで確認した事実を反映してある（§0-3）。**ただし WRS機の実物で必ず再確認すること。**
 

@@ -1,7 +1,7 @@
 # カニ歩き・立ち往生の対策案（全リスト）と実験01の設計
 
 > 作成 2026-09-16（学習戦略チャット）。**再エクスポート後の機体（`6ede75b`）に対して、カニ歩き（横流れ）と立ち往生（指令があるのに歩かない）を消すための案を全部並べ、今夜の実験01に何を入れるかを決めた記録。**
-> WRS機への指示書は `instructions/wrs_experiment01_instruction.md`、ランの記録は `reference/training_runs.md`。
+> WRS機への指示書は `instructions/inactive/wrs_experiment01_instruction.md`、ランの記録は `reference/training_runs.md`。
 > **この文書の数値のうち「立ち止まりの給料」は Cowork 側の計算（dt と std は Isaac Lab 既定を仮定）。WRS側の grep（sim.dt / decimation / std）で前提が違えば直す。**
 
 ---
@@ -162,7 +162,7 @@
 - 08-21 設定の立ち止まりは満点比 0.24 と低いのに、A は完全に立ち往生した。**「給料」だけでは説明できず、地形の難しさ・探索・足上げ報酬の形が効いている。**
 - 旧 `feet_air_time`（threshold 0.2 s）は、B が実際に出した滞空時間 0.07〜0.11 s の歩幅では**毎歩マイナス**になる（A の Episode_Reward/feet_air_time は終始負）。この機体の自然な歩調では、旧報酬は「足を上げると罰」になっている疑い。
 
-### 4-4. 次（実験02、指示書 `instructions/wrs_experiment02_instruction.md`）
+### 4-4. 次（実験02、指示書 `instructions/inactive/wrs_experiment02_instruction.md`）
 
 | 組 | ラン | 問い |
 |---|---|---|
@@ -195,7 +195,7 @@
 2. **action 0 で放置すると 64/64 が前へ倒れる**（前へ 29 cm、pitch +73°）。全身 COM は支持多角形の中心より 2.5 cm 前（前余裕 6.6 cm / 後余裕 11.5 cm）。**COM は支持多角形の中にあるので、剛体なら倒れない。倒れるのは stiffness 10〜15 で関節が重力で沈むから、という読みの方が筋が良い**（膝に 3〜8 N·m なら沈みは 0.2〜0.5 rad、4倍にすると 0.07〜0.18 rad。Cowork 側の概算）。WRS側の「前に倒れないよう押し返すのを先に覚え、その副産物で後退がただで手に入る」は仮説のまま。
 3. level 0 の地形の中身は `P1_terrain_level0.md`（WRS側）。
 
-### 5-3. 次（`instructions/wrs_experiment02_p3_instruction.md`、元の P3 を差し替え）
+### 5-3. 次（`instructions/inactive/wrs_experiment02_p3_instruction.md`、元の P3 を差し替え）
 
 | 項目 | 中身 | 問い |
 |---|---|---|

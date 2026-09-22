@@ -34,7 +34,7 @@ H の順番は `LL_HR, LR_HR, LL_HAA, LR_HAA, LL_HFE, LR_HFE, LL_KFE, LR_KFE, LL
 
 ### 2. 変換表を作る（通電なし）
 
-`instructions/deployment_04_joint_mapping_instruction.md` の形式で、各10関節について次を埋める。
+`instructions/inactive/deployment_04_joint_mapping_instruction.md` の形式で、各10関節について次を埋める。
 
 | H順 | 関節名 | CAN ID（10進） | 機種 | 実機正方向→H正方向の符号 | 基準姿勢でのMIT角 | H角 |
 |---|---|---:|---|---:|---:|---:|
@@ -58,4 +58,4 @@ H角はゼロ姿勢なら全て0。歩行開始時のH既定角は、HR/HAA=0、
 
 ## M5の後に進めるもの
 
-M5完了後も、方策を送ってはいけない。次は `archive/next_chat_m7_dry_loop.md` のCANなしONNX照合、T265の実機取付け（`instructions/deployment_03_t265_mount_instruction.md`）、その後の10関節CAN統合である。
+M5完了後も、方策を送ってはいけない。次は `archive/next_chat_m7_dry_loop.md` のCANなしONNX照合、T265の実機取付け（`instructions/inactive/deployment_03_t265_mount_instruction.md`）、その後の10関節CAN統合である。

@@ -1,16 +1,16 @@
 # 指示書 実験03: 実機準拠アクチュエータで平地を一から学習＋デプロイ準備（WRS機・新しいチャット）
 
-> 作成 2026-09-16 15時、**改訂 2026-09-16 夕（実験02 停止点2の結果とユーザー決定を反映）**。**WRS機の Claude Code を新しいチャットにして、①`instructions/wrs_training_operator_instruction.md` の全文 → §8 の確認が終わったら ②下のコードブロック、の順に貼る。**
+> 作成 2026-09-16 15時、**改訂 2026-09-16 夕（実験02 停止点2の結果とユーザー決定を反映）**。**WRS機の Claude Code を新しいチャットにして、①`instructions/inactive/wrs_training_operator_instruction.md` の全文 → §8 の確認が終わったら ②下のコードブロック、の順に貼る。**
 > 背景: ゴールを「平地」に変更（坂は後回し）。AK80-9 の実機トルクを超えた設定（effort 20〜30 N·m）で学習した方策はデプロイに使えないので、実機準拠のアクチュエータで一から学習し直す。根拠は `reference/actuator_params.md`、経緯は `chats/2026-09-16_goal-flat-real-actuator.md` と `chats/2026-09-16_exp03-criteria-and-turning.md`。
 > **改訂点:** ①デプロイの合格基準（トルク: S1 で RMS ≤ 定格・最大 ≤ ピーク、飽和率と切る前トルクを併記／旋回: 小旋回 S7・S8 で判定）を追加 ②P0 を実験02完了後の内容に ③P1-3 に S7〜S9 と computed torque・S3（立ち）④P1-4 に左右対称性 ⑤P1-5 旋回が出ない件の材料（報酬実効値・heading モードの指令分布・罰と取り分の比）⑥P3 で並走の実測（プロセスごと VRAM・RAM・CPU）⑦play の起動行を報告させる ⑧占有見込みを約5時間に。⑨（REPORT_exp02_stop2.md 本文を読んで追記）P1-4 に足裏接地の時間変化、左右対称性は参考扱いに（S1 yaw の符号がランで違う）、P1-5 に E の error_vel_yaw がほぼ改善しなかった件。
 
 ```
 # 指示: 実験03 実機準拠アクチュエータで平地を一から学習 ＋ デプロイ準備
 
-最初に貼った指示書（instructions/wrs_training_operator_instruction.md）の掟・作法はすべて有効。ただし §3〜§6 の一部は古いので、下の「更新」を優先すること。
+最初に貼った指示書（instructions/inactive/wrs_training_operator_instruction.md）の掟・作法はすべて有効。ただし §3〜§6 の一部は古いので、下の「更新」を優先すること。
 ユーザーは今日このあと約5時間、この GPU を学習で占有することを了承済み。開始時に nvidia-smi で他人の計算プロセスがあれば、何も起動せず報告して止まる。
 
-## 更新（指示書 instructions/wrs_training_operator_instruction.md から変わったこと）
+## 更新（指示書 instructions/inactive/wrs_training_operator_instruction.md から変わったこと）
 - 最新コミットは 6c80638（評価スクリプト・weight 0 の feet_air_time_biped 項など）。コードは 08-21 版ではない。
 - 学習・評価の起動には環境変数 OMNI_KIT_ACCEPT_EULA=YES が要る。起動スクリプトの雛形は tools\\runs\\_launch.ps1 と tools\\runs\\_eval.ps1。
 - terrain_type=plane は使えない（S3 の既定 USD を取りに行って落ちる）。平地は sub_terrains の proportion を flat=1.0・他 0.0 に上書きして作る。

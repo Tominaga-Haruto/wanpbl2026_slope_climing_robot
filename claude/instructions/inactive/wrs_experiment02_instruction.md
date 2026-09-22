@@ -1,6 +1,6 @@
 # 指示書 実験02: 切り分けの仕上げ・seed 再現・旋回（WRS機の Claude Code に貼る）
 
-> 作成 2026-09-16 昼。実験01（`instructions/wrs_experiment01_instruction.md`）と同じ WRS側チャットに続けて貼る。
+> 作成 2026-09-16 昼。実験01（`instructions/inactive/wrs_experiment01_instruction.md`）と同じ WRS側チャットに続けて貼る。
 > 根拠は `reference/crab_standstill_countermeasures.md` §4（実験01の結果と訂正）、記録は `reference/training_runs.md`。
 
 ```

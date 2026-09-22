@@ -24,7 +24,7 @@ Isaac Labで学習した二足ロボットを、まず平地で安全に実機�
 1. リポジトリ直下の `AGENTS.md`
 2. この `PROJECT.md`
 3. `CONTEXT.md` ── 現在地。**いま有効な引き継ぎ書を冒頭で名指しする。**
-4. その名指された `handoffs/YYYY-MM-DD_....md`
+4. その名指された `handoffs/active/YYYY-MM-DD_....md`
 
 ここまでで約1万字。**これ以外は最初に読まない。** 必要になった時だけ、下の表から1本ずつ取りに行く。
 
@@ -35,7 +35,7 @@ Isaac Labで学習した二足ロボットを、まず平地で安全に実機�
 | コントローラー | `domains/controller/README.md` |
 | デプロイの段取り | `domains/deployment/README.md` |
 | 実機・評価の実行手順 | `procedures/README.md` |
-| WRS機・デプロイ作業への指示書 | `instructions/README.md` |
+| WRS機・デプロイ作業への指示書 | `instructions/active/`（終わったものは `instructions/inactive/`） |
 | 数値・環境・コード構造の正本 | `reference/README.md` |
 | ある結論の根拠 | `reports/`（日付＋内容のファイル名） |
 | 過去のやり取り | `chats/`（日付＋内容のファイル名） |
@@ -55,3 +55,4 @@ Isaac Labで学習した二足ロボットを、まず平地で安全に実機�
 - ファイル名は `YYYY-MM-DD_内容` か `d9_3_内容`。`ACTIVE`・`new`・`latest` のような中身の分からない固定名を使わない。
 - 1チャットにつき `chats/` へ1ファイル。索引ファイルは作らない（ファイル名と `git log` が索引）。
 - 削除しない。置き換えたら、古い方の冒頭に「置き換え済み・後継はこれ」を1行足す。
+- **`handoffs/` と `instructions/` は `active/` と `inactive/` に分ける。** 終わった・置き換えた・廃止したものは、そう判断したエージェントがその場で `git mv` で `inactive/` へ移し、同じ commit で `CONTEXT.md` のリンクを直す（2026-09-23 から）。

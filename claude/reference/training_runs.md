@@ -8,7 +8,7 @@
 > **起動は conda activate 込みの `tools\\runs\\_launch.ps1` / `_eval.ps1` / `_play.ps1`（python.exe 直叩きは h5py の DLL 競合で落ちる）。**
 > **★起動行に `agent.policy.noise_std_type=log` を必ず入れる（H_gainDR で漏れた。再生・評価も同じ値でないと読み込めない）。**
 
-## 実験01（2026-09-16 05:15〜、`instructions/wrs_experiment01_instruction.md`）
+## 実験01（2026-09-16 05:15〜、`instructions/inactive/wrs_experiment01_instruction.md`）
 
 | ラン | run フォルダ | 変更（08-21 版からの差） | seed | iter | 判定（最終） | S1 v_x / S2 v_x / S4 v_x | S6 yaw rate | 正規化 err_xy | 所見 |
 |---|---|---|---|---|---|---|---|---|---|
@@ -18,7 +18,7 @@
 | C_noflat | `2026-09-16_08-49-55_C_noflat` | B − 平地（rough） | 1 | 3000 | **立ち往生**（2999、後退のみ可） | — | 1000 時点 0.175 | 1000 時点 0.74 | rough は報酬/std を変えても歩かない |
 | C_flatonly | `2026-09-16_08-50-17_C_flatonly` | A ＋ 平地 | 1 | 3000 | **立ち往生 無**（2400 で歩き出す）、カニ歩きは S1 進行方向角 −14.3° のみ外れ | 2400: 0.492 / 0.921 / −0.265 | — | 2999: 0.230 | 1600 までは後退のみ。平地だけで歩く |
 
-## 実験02（2026-09-16 午後〜、`instructions/wrs_experiment02_instruction.md` の P3 を `instructions/wrs_experiment02_p3_instruction.md` で差し替え）
+## 実験02（2026-09-16 午後〜、`instructions/inactive/wrs_experiment02_instruction.md` の P3 を `instructions/inactive/wrs_experiment02_p3_instruction.md` で差し替え）
 
 | ラン | run フォルダ | 変更 | seed | iter | 判定（最終） |
 |---|---|---|---|---|---|
@@ -28,7 +28,7 @@
 
 - P3a（action 0、stiffness 1× / 2× / 4×）: **4倍でも 64/64 が前に転倒**、変位 0.289 → 0.337 m。膝の沈みは 2.7° で 2倍でほぼ 0。足首 9.2° は 4倍で 1.5 倍しか縮まない＝沈みではなく倒れ込み。**剛性不足の仮説は外れ。**
 
-## 実験03（2026-09-16 17:28〜21:12、`instructions/wrs_experiment03_instruction.md`、報告 `tools\\logs\\REPORT_exp03_final.md`）
+## 実験03（2026-09-16 17:28〜21:12、`instructions/inactive/wrs_experiment03_instruction.md`、報告 `tools\\logs\\REPORT_exp03_final.md`）
 
 **実機準拠アクチュエータ（関節ごと5グループ、commit `664105a`）で一から学習。B 以前の方策（effort AK80 に 20〜30 N·m）はデプロイに使わない。** 評価に S7 (0.5,0,+0.3) / S8 (0.5,0,−0.3) / S9 (0,0,−0.5) と関節ごとトルク（applied・computed・飽和率）を追加。
 
@@ -45,7 +45,7 @@
 - P1-4: stiffness 1000 / damping 50 でも 32/32 前に転倒。t=0 の接地は片足 0 点・片足 6 点。左右リンク質量は一致、反転比較の y が全5ペア −0.038〜−0.040 m ずれる（→ 実験04 で base 原点の横ずれ 2 cm と判明）。
 - h5py の DLL 競合（conda activate 無しの python.exe 直叩きで発生）→ 起動スクリプトに conda activate（`0a434a7`）。measure_crab.py が Hydra の effort 上書きを評価で反映していなかった → `params\\env.yaml` から読む修正（`5f3a487`）。
 
-## 実験04（2026-09-16 22:09〜、`instructions/wrs_experiment04_instruction.md` ＋ `instructions/wrs_experiment04_followup_instruction.md`、報告 `tools\\logs\\REPORT_exp04_stop2.md` / `REPORT_exp04_stop3.md`）
+## 実験04（2026-09-16 22:09〜、`instructions/inactive/wrs_experiment04_instruction.md` ＋ `instructions/inactive/wrs_experiment04_followup_instruction.md`、報告 `tools\\logs\\REPORT_exp04_stop2.md` / `REPORT_exp04_stop3.md`）
 
 **G_real_peak の頑健性を評価だけで確かめ（16 条件）、保険の学習を3本。**
 

@@ -10,7 +10,7 @@
 # 指示: 停止点4 の講評と、実験05（デプロイ準備 D ＋ その場旋回の原因調べ T0。停止点5a・5b）
 
 停止点4 ありがとう。ハングで止めて、推測でリトライしなかった判断は正しい。
-前の指示（instructions/wrs_training_operator_instruction.md の掟、実験03・04 の「更新」と「やらないこと」）はすべて有効。起動は _launch.ps1 / _eval.ps1 / _play.ps1。
+前の指示（instructions/inactive/wrs_training_operator_instruction.md の掟、実験03・04 の「更新」と「やらないこと」）はすべて有効。起動は _launch.ps1 / _eval.ps1 / _play.ps1。
 GPU の占有はユーザーが了承済み（今回は期限なし）。開始時に nvidia-smi で他人の計算プロセスがあれば、何も起動せず報告して止まる。
 
 ## 判断（ユーザー決定）

@@ -1,6 +1,6 @@
 # 機体モデルの約束事（座標・関節の符号・初期姿勢）
 
-> 作成 2026-09-16。WRS機での再エクスポート（`instructions/wrs_urdf_reexport_instruction.md`）で確定した、**URDF/USD の座標系と関節の符号の約束**。
+> 作成 2026-09-16。WRS機での再エクスポート（`instructions/inactive/wrs_urdf_reexport_instruction.md`）で確定した、**URDF/USD の座標系と関節の符号の約束**。
 > **柱A（報酬・観測の設計）でも柱B（実機の関節↔モーター対応表、原点合わせ）でもこれを基準にする。**
 > 経緯は `chats/2026-09-15_wrs-reexport-instruction.md`。
 
