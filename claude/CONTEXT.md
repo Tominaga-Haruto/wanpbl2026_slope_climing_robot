@@ -6,7 +6,7 @@
 
 **`handoffs/active/2026-09-23_d10-6_関節符号確認.md`**
 
-**D10-5 完了: 初期姿勢の保持電流を実測（LL_HFE 1.80 A など、1.0 A では立てない）。ただし左右に同じ角度を送ると脚が前後に割れる。シムの URDF では HFE・KFE・FFE の軸が左右同じ向きなので、片脚のピッチ3軸の実機→H 符号が −1 の疑い（D4 は全軸 +1）。** 次は無通電で10軸の符号を確かめる（`procedures/d10_6_関節符号_無通電確認手順.md`）。**確定するまで方策 run はしない。** 根拠 `reports/2026-09-23_d10-5_result.md`。
+**D10-6 完了: 実機→H 符号は LL_HAA・LR_HR・LR_HFE・LR_KFE・LL_FFE が −1（D4 の全軸 +1 は誤り。どの関節も左右の片側だけが逆）。送信器 build `D10_6_JOINTSIGN_20260923_1340` に実装（目標・観測の両方、テスト 123本 OK）。** 次は D10-5 R1（`--stand-only`）の取り直しで、要承認。左右対称に立つかを見て、保持電流と電源の電流を取り直す。**D10-3〜D10-5 の方策 run は符号が誤ったまま回していた。** 根拠 D4 報告の訂正行。
 実験11（WRS friction スイープ、`instructions/active/wrs_experiment11_friction_instruction.md`）は実機と独立に並行で回す。
 
 ## 学習側の現在地（2026-09-23 夜）
@@ -27,7 +27,7 @@
 
 ## 現在の優先順位
 
-1. **D10-6: 10軸の実機→H 符号を無通電で確認（`procedures/d10_6_関節符号_無通電確認手順.md`）→ 不一致なら送信器・関節表に符号を実装 → D10-5 R1（`--stand-only`）を取り直す。** 符号未確定のまま方策 run はしない。
+1. **D10-5 R1（`--stand-only`）を符号修正後の build で取り直す（要承認）。** 左右対称に立つか、保持電流、安定化電源（JESVERTY 2台、合計 20 A）の電流表示を記録する。電源は2台を並列にせず片脚1台ずつ、GND は共通にする。その後、吊りの方策 run。
 2. **立たせた基準姿勢で D7 の原点を取るための支持治具。床上デプロイの前提条件に格上げした。** D10-2 では前の run で垂れた姿勢のまま `oa` が打たれ、ゼロ姿勢が回ごとに 20〜30° 動いていた。方策の観測量はこの原点からの関節角なので、原点が動けば方策は毎回ちがうロボットを見ている。
 3. **実験12（今夜の学習2本、上の節）と実験11: WRS機で friction スイープ（評価のみ・学習なし）。** 指示は `instructions/active/wrs_experiment11_friction_instruction.md`。時間が無ければ「最短ルート」節の3条件（F1.0 / F3.0 / F5.0）だけでよい。実機と並行。
 4. **床上の電流中止値は D10-5 R1（初期姿勢の保持電流）と R2/R3・D10-4 の方策 run 実測（最大 LR_HFE 4.4 A、LL_HFE 3.15 A、HAA 1.8 A）から決める。** 推定で決めない。
@@ -52,6 +52,7 @@
   方策が使ってよい量は AK10-9 42.1 A / AK80-9 25.8 A（effort 53.0 / 13.5 N·m ÷ c_p）。**1.0 A はその 2.4〜3.9% である。**
 - **D9-6 実測（デプロイ用ゲイン、判定はすべて A）は有効のまま:** 0x1C LL_HR 0.90 A / 不感帯 6.50°、0x13 LR_HR 0.63 A / 4.55°、0x2B LL_FFE 0.72 A / 2.17°。**0x1C は故障していない。** 根拠 `reports/2026-09-22_d9-6_result.md`。
 - **D9-3 / D9-5A の C は新ビルドでも C のまま。** あれは量子化ディザで、最後まで走り出していない。
+- **送信器 build `D10_6_JOINTSIGN_20260923_1340`（`.bak_20260923_jointsign`、テスト 123本 OK）: 関節符号（`robot_joint_map.JointBinding.sign`）を目標と観測の両方に適用。CSV 列 `wire_target_motor_rad`・`feedback_current_h_a`。** 以下は前 build から:
 - **送信器 build `D10_5_STANDPOSE_20260923_1300`（`.bak_20260923_standpose`、テスト 89本 OK）: `--stand-seconds`（シム初期姿勢へ ramp→保持→方策）と `--stand-only` を追加。** 以下は前 build から:
 - **送信器 build `D10_4_ALLSLEW_20260923_1200`（`.bak_20260923_allslew`、テスト 83本 OK）: `--policy-slew-dps`（全軸 slew、`--all-axes` の方策 run で必須）と全軸プレアーム・ゲート（|目標|>40° か |delta|>30° で送信前に拒否）、停止時の `POLICY STAGE` / `SLEW GAP` を追加。** 以下は前 build からそのまま:
 - 送信器 build `D10_3_AXISLOG_20260923_1200`（`.bak_20260923_axislog`、テスト 73本 OK）。`--all-axes` は**全10軸をCSVに記録する**。停止時に `AXIS SNAPSHOT`（全10軸の pos/vel/cur/err/age）。`--analyze` は多軸CSVを読み、hold/policy段階が無いCSVに `INCOMPLETE` を出す。電流中止は軸ごとで、**既定は全軸 1.0 A のまま**。`--gravity-limits`（要承認・`--all-axes` 必須）で HR 3.0 / HAA 6.0 / HFE 11.0 / KFE 3.0 / FFE 2.0 A。`--hold-pose` は全軸をいま居る位置に保持するだけのモード（方策・T265・`--package` を使わない）。**速度中止 100°/s・stale feedback 0.3 s・原点 45°・Kp/Kd・トルク欄は据え置き。**
