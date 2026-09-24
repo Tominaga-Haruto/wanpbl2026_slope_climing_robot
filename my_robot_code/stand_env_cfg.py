@@ -155,3 +155,39 @@ class SkyentificPoclegsStandEnvCfg_PLAY(SkyentificPoclegsStandEnvCfg):
         self.observations.policy.enable_corruption = False
         self.events.base_external_force_torque = None
         self.events.push_robot = None
+
+
+# X18c (2026-09-25 07:30): v1@1500 and v2_soft@1300 both stood still ("立往生").
+# Likely reasons (not verified): (1) track_lin_vel std 0.5 pays ~70% of the tracking reward for standing
+# still at vx 0.3; (2) HAA >= -6 deg keeps the feet ~25 cm apart, so shifting the weight onto one foot is
+# hard; (3) short steps are penalized before long ones can be found; (4) knee/height penalties punish
+# the knee bend a swing needs. Registered as a separate task; the classes above are unchanged.
+@configclass
+class SkyentificPoclegsStandWalkEnvCfg(SkyentificPoclegsStandEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        r = self.rewards
+        r.track_lin_vel_xy_exp.weight = 2.0
+        r.track_lin_vel_xy_exp.params["std"] = 0.25
+        r.feet_air_time.params["threshold_min"] = 0.15
+        r.feet_air_time_biped.weight = 1.0
+        r.joint_deviation_knee.weight = -0.02
+        r.base_height_l2.weight = -10.0
+        r.flat_orientation_l2.weight = -1.0
+        r.joint_vel_l2.weight = -5.0e-4
+        r.joint_acc_l2.weight = -1.25e-7
+        r.joint_torques_l2.weight = -5.0e-5
+        limits = dict(JOINT_LIMITS_DEG)
+        limits[".*_HAA"] = (-10.0, 30.0)
+        self.events.set_joint_limits.params["limits_deg"] = limits
+
+
+@configclass
+class SkyentificPoclegsStandWalkEnvCfg_PLAY(SkyentificPoclegsStandWalkEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5
+        self.observations.policy.enable_corruption = False
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None

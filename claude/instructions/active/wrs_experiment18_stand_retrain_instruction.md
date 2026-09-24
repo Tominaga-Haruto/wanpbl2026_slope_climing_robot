@@ -280,3 +280,79 @@ class SkyentificPoclegsStandEnvCfg_PLAY(SkyentificPoclegsStandEnvCfg):
   - **X18_stand_v1**: 設定そのまま。
   - **X18_stand_v2_soft**: 保険。罰を緩めた版（Hydra 上書き）: joint_vel_l2 −5e-4、joint_acc_l2 −1.25e-7、joint_torques_l2 −5e-5、base_height_l2 −10、flat_orientation_l2 −1.0、feet_air_time の threshold_min 0.2。v1 が罰の重さで歩かなくなった場合の受け皿。
 - 目安: 2本並走で 3000 iter 約 3〜3.5 時間。1500 iter（約 1.5〜2 時間）で一度再生して見る。
+
+## X18c（2026-09-25 07:30）: v1@1500・v2_soft@1300 とも立往生 → 報酬と4番目の可動域を直して 1000 iter 再開
+
+見立て（未検証）: ①速度追従の幅 std 0.5 が緩く、vx 0.3 で止まっていても追従報酬の約 7 割がもらえる、②4番目 −6°までだと足が約 25 cm 離れていて片足に体重を移しにくい（H は −15°で歩いていた）、③長い歩幅を見つける前に短い歩幅が罰される、④振り出しに要る膝の曲げを膝・高さの罰が邪魔する。
+
+CLI に渡すもの:
+
+```
+# 依頼: 実験18 の続き X18c。新しいタスクを1つ追加し、スモークして、再開の学習コマンドを渡して止まる
+
+## 前提
+このプロンプトだけで完結。AGENTS.md・claude\ 以下・メモリは読まない。学習をバックグラウンドで回さない。
+何も削除しない。pip しない。git commit・push しない。既存のクラスの中身は変えない（追記だけ）。
+追記するファイルは先に .bak_20260925_x18c を取る。
+
+## やること
+1. stand_env_cfg.py（references 側と my_robot_code がハードリンク）の末尾に、下のコードをそのまま追記する。
+2. __init__.py に2つ追記（形は Stand-v0 と同じ、rsl_rl 側も同じ）:
+   - "Skyentific-Poclegs-StandWalk-v0" → stand_env_cfg:SkyentificPoclegsStandWalkEnvCfg
+   - "Skyentific-Poclegs-StandWalk-Play-v0" → stand_env_cfg:SkyentificPoclegsStandWalkEnvCfg_PLAY
+3. スモーク: StandWalk-v0、num_envs 64、max_iterations 5、run名 TEST_X18c、X18_stand_v2_soft の最新
+   checkpoint（model_1300.pt。無ければあるうちの最大）から resume。確認して報告:
+   checkpoint を読めた行、env.yaml の track_lin_vel_xy_exp（weight 2.0、std 0.25）、feet_air_time の
+   threshold_min 0.15、feet_air_time_biped 1.0、joint_deviation_knee −0.02、base_height_l2 −10、
+   HAA の位置制限の実テンソル（−10〜30°）。
+4. 本番の学習コマンド（前回の X18_stand_v2_soft の起動行と同じ形、train.py を直接）:
+   task StandWalk-v0、num_envs 4096、resume（--resume と --load_run に X18_stand_v2_soft の run フォルダ名、
+   --checkpoint に 3 の checkpoint）、max_iterations 1000、save_interval 100、run名 X18c_walk、
+   agent.policy.noise_std_type=log、報酬の Hydra 上書きは付けない（新クラスに入っている）。
+5. 再生コマンド（StandWalk-Play-v0、-Filter *_X18c_walk、checkpoint 差し替え式）と、
+   評価コマンド（x18_eval.py を --task で StandWalk-Play-v0 にできるならそうする。できなければ、
+   x18_eval.py を .bak を取ってから --task 引数を足す。既定は今のまま）。
+
+## 報告（これで止まる）
+冒頭3行（スモークの合否、resume した checkpoint、進めてよいか）、確認した値、学習・再生・評価のコマンド
+（実行フォルダ付き・プレースホルダ無し・1行版）。
+
+## 追記するコード
+```
+
+```python
+# X18c (2026-09-25 07:30): v1@1500 and v2_soft@1300 both stood still ("立往生").
+# Likely reasons (not verified): (1) track_lin_vel std 0.5 pays ~70% of the tracking reward for standing
+# still at vx 0.3; (2) HAA >= -6 deg keeps the feet ~25 cm apart, so shifting the weight onto one foot is
+# hard; (3) short steps are penalized before long ones can be found; (4) knee/height penalties punish
+# the knee bend a swing needs. Registered as a separate task; the classes above are unchanged.
+@configclass
+class SkyentificPoclegsStandWalkEnvCfg(SkyentificPoclegsStandEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        r = self.rewards
+        r.track_lin_vel_xy_exp.weight = 2.0
+        r.track_lin_vel_xy_exp.params["std"] = 0.25
+        r.feet_air_time.params["threshold_min"] = 0.15
+        r.feet_air_time_biped.weight = 1.0
+        r.joint_deviation_knee.weight = -0.02
+        r.base_height_l2.weight = -10.0
+        r.flat_orientation_l2.weight = -1.0
+        r.joint_vel_l2.weight = -5.0e-4
+        r.joint_acc_l2.weight = -1.25e-7
+        r.joint_torques_l2.weight = -5.0e-5
+        limits = dict(JOINT_LIMITS_DEG)
+        limits[".*_HAA"] = (-10.0, 30.0)
+        self.events.set_joint_limits.params["limits_deg"] = limits
+
+
+@configclass
+class SkyentificPoclegsStandWalkEnvCfg_PLAY(SkyentificPoclegsStandWalkEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5
+        self.observations.policy.enable_corruption = False
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None
+```
