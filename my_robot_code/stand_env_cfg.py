@@ -1,0 +1,146 @@
+# X18 (2026-09-25): "stand-start" retrain config.
+# New task only. Subclasses SkyentificPoclegsRoughEnvCfg and overrides in __post_init__,
+# so the existing rough task (and every past run) is unchanged.
+#
+# What changes vs H_eff13p5 (reasons: claude/reports/2026-09-25_*):
+#   1. default pose = physically near-straight leg (knee 8 deg), with the CAD zero-pose asymmetry
+#      (URDF FK: LL HFE +2.9 / KFE -12.3 / FFE +9.4, LR -0.9 / -7.2 / +8.1 deg = physically straight)
+#   2. joint limits (URDF has +-180 deg everywhere): knee cannot hyperextend, HAA cannot close the feet
+#   3. start on a flat plane, feet on the floor, zero initial velocity, joints +-3 deg
+#   4. rewards against the 5 Hz shuffle gait: single-stance time, joint vel/acc/torque, knee pose,
+#      base height, orientation
+#   5. effort limits near the real transmitter's abort currents, friction / gain DR
+import copy
+import math
+
+import torch
+
+from isaaclab.managers import EventTermCfg as EventTerm
+from isaaclab.managers import RewardTermCfg as RewTerm
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.utils import configclass
+
+import isaaclab_tasks.manager_based.locomotion.velocity.mdp as mdp
+
+# CLI: fix this import to the real module path if needed (same package as rough_env_cfg.py).
+from .rough_env_cfg import SkyentificPoclegsRoughEnvCfg
+
+D = math.radians
+
+# physical pose: knee bent 8 deg, HFE -4, FFE -4 (thigh and shank symmetric -> torso upright, foot flat).
+# sim angle = physical angle from straight + CAD offset. HFE+KFE+FFE = 0 on both legs (foot parallel to torso).
+STAND_JOINT_POS = {
+    "LL_HR": 0.0, "LR_HR": 0.0,
+    "LL_HAA": 0.0, "LR_HAA": 0.0,
+    "LL_HFE": D(-1.1), "LR_HFE": D(-4.9),
+    "LL_KFE": D(-4.3), "LR_KFE": D(0.8),
+    "LL_FFE": D(5.4), "LR_FFE": D(4.1),
+}
+
+# measured by the zero-action stand check (step S1 of exp18): settled base z + 0.003 m.
+INIT_Z = 0.38
+# measured by the same check: settled base z.
+BASE_HEIGHT_TARGET = 0.37
+
+# sim joint limits [deg]. KFE lower = physically straight - 2 deg. HAA lower -6 (real feet touch at -8.5..-11).
+JOINT_LIMITS_DEG = {
+    ".*_HR": (-25.0, 25.0),
+    ".*_HAA": (-6.0, 30.0),
+    ".*_HFE": (-60.0, 60.0),
+    "LL_KFE": (-14.3, 100.0),
+    "LR_KFE": (-9.2, 100.0),
+    ".*_FFE": (-45.0, 45.0),
+}
+
+# N*m. current = torque / c_p (AK80-9 0.523, AK10-9 1.258): FFE 19 A, HFE 15 A, KFE 16 A, HAA 9.5 A, HR 4.8 A
+EFFORT_LIMITS = {"ffe": 10.0, "hfe": 8.0, "kfe": 20.0, "haa": 12.0, "hr": 6.0}
+
+
+def set_joint_limits_deg(env, env_ids, asset_cfg: SceneEntityCfg, limits_deg: dict):
+    """Startup event: overwrite joint position limits (and hence soft limits) for the given joints."""
+    asset = env.scene[asset_cfg.name]
+    limits = asset.data.joint_pos_limits.clone()
+    for expr, (lo, hi) in limits_deg.items():
+        ids, _ = asset.find_joints(expr)
+        limits[:, ids, 0] = math.radians(lo)
+        limits[:, ids, 1] = math.radians(hi)
+    asset.write_joint_position_limit_to_sim(limits, warn_limit_violation=False)
+
+
+@configclass
+class SkyentificPoclegsStandEnvCfg(SkyentificPoclegsRoughEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+
+        # ---- robot: default pose, spawn height, effort limits
+        robot = copy.deepcopy(self.scene.robot)
+        robot.init_state.pos = (0.0, 0.0, INIT_Z)
+        robot.init_state.joint_pos = dict(STAND_JOINT_POS)
+        for name, eff in EFFORT_LIMITS.items():
+            robot.actuators[name].effort_limit = eff
+        self.scene.robot = robot
+
+        # ---- flat plane only
+        self.scene.terrain.terrain_type = "plane"
+        self.scene.terrain.terrain_generator = None
+        self.curriculum.terrain_levels = None
+        self.curriculum.push_force_levels = None  # keep pushes at +-0.5 m/s
+
+        # ---- commands (deployment range) + standing envs
+        self.commands.base_velocity.ranges.lin_vel_x = (-0.3, 0.6)
+        self.commands.base_velocity.ranges.lin_vel_y = (-0.2, 0.2)
+        self.commands.base_velocity.ranges.ang_vel_z = (-0.6, 0.6)
+        self.commands.base_velocity.rel_standing_envs = 0.15
+
+        # ---- events: calm start, joint limits, DR
+        self.events.reset_base.params["velocity_range"] = {
+            "x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.0, 0.0),
+            "roll": (0.0, 0.0), "pitch": (0.0, 0.0), "yaw": (0.0, 0.0),
+        }
+        self.events.reset_robot_joints = EventTerm(
+            func=mdp.reset_joints_by_offset,
+            mode="reset",
+            params={"position_range": (-0.05, 0.05), "velocity_range": (0.0, 0.0)},
+        )
+        self.events.set_joint_limits = EventTerm(
+            func=set_joint_limits_deg,
+            mode="startup",
+            params={"asset_cfg": SceneEntityCfg("robot"), "limits_deg": JOINT_LIMITS_DEG},
+        )
+        self.events.scale_all_joint_friction_model.params["friction_distribution_params"] = (1.0, 3.0)
+        self.events.randomize_actuator_gains.params["stiffness_distribution_params"] = (0.8, 1.2)
+        self.events.randomize_actuator_gains.params["damping_distribution_params"] = (0.8, 1.2)
+
+        # ---- rewards
+        r = self.rewards
+        r.flat_orientation_l2.weight = -2.0
+        r.joint_torques_l2.weight = -1.0e-4
+        r.action_rate_l2.weight = -0.02
+        r.feet_air_time.params["threshold_min"] = 0.25  # swings shorter than 0.25 s are penalized
+        r.feet_air_time.params["threshold_max"] = 0.5
+        r.feet_air_time_biped.weight = 0.5
+        r.feet_air_time_biped.params["threshold_min"] = 0.2
+        r.feet_air_time_biped.params["threshold_max"] = 0.4
+        r.joint_deviation_knee.weight = -0.1
+        r.undesired_contacts.params["sensor_cfg"] = SceneEntityCfg(
+            "contact_forces", body_names=[".*hfe", ".*haa", ".*kfe"]
+        )
+        r.joint_vel_l2 = RewTerm(func=mdp.joint_vel_l2, weight=-1.0e-3)
+        r.joint_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
+        r.base_height_l2 = RewTerm(
+            func=mdp.base_height_l2, weight=-30.0, params={"target_height": BASE_HEIGHT_TARGET}
+        )
+
+        # ---- terminations
+        self.terminations.bad_orientation.params["limit_angle"] = 0.8
+
+
+@configclass
+class SkyentificPoclegsStandEnvCfg_PLAY(SkyentificPoclegsStandEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5
+        self.observations.policy.enable_corruption = False
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None
