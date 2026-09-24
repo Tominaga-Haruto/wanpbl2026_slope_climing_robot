@@ -290,3 +290,73 @@ class SkyentificPoclegsHShapeEnvCfg_PLAY(SkyentificPoclegsHShapeEnvCfg):
         self.observations.policy.enable_corruption = False
         self.events.base_external_force_torque = None
         self.events.push_robot = None
+
+
+# X18g / X18h (2026-09-25 09:00): bold reward change instead of disturbed starts (X18e/X18f withdrawn).
+# Standing must stop paying: big tracking weight, a linear velocity-error penalty that has a gradient
+# even far from the command, a penalty for keeping both feet down while a velocity is commanded, big
+# stepping rewards, no zero commands, H-level regularization only, H efforts and HAA -16.
+def lin_vel_error_l1(env, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    asset = env.scene[asset_cfg.name]
+    cmd = env.command_manager.get_command(command_name)
+    return torch.sum(torch.abs(cmd[:, :2] - asset.data.root_lin_vel_b[:, :2]), dim=1)
+
+
+def double_support_while_moving(env, command_name: str, sensor_cfg: SceneEntityCfg, min_time: float) -> torch.Tensor:
+    contact_sensor = env.scene.sensors[sensor_cfg.name]
+    contact_time = contact_sensor.data.current_contact_time[:, sensor_cfg.body_ids]
+    both_down_long = torch.all(contact_time > min_time, dim=1)
+    moving = torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
+    return (both_down_long & moving).float()
+
+
+@configclass
+class SkyentificPoclegsStandBoldEnvCfg(SkyentificPoclegsStandWalkEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        # physics that allowed H to walk
+        for name, eff in {"ffe": 13.5, "hfe": 13.5, "kfe": 53.0, "haa": 53.0, "hr": 53.0}.items():
+            self.scene.robot.actuators[name].effort_limit = eff
+        limits = dict(JOINT_LIMITS_DEG)
+        limits[".*_HAA"] = (-16.0, 30.0)
+        self.events.set_joint_limits.params["limits_deg"] = limits
+        # always a forward command, never "stand"
+        self.commands.base_velocity.ranges.lin_vel_x = (0.15, 0.6)
+        self.commands.base_velocity.ranges.lin_vel_y = (-0.1, 0.1)
+        self.commands.base_velocity.ranges.ang_vel_z = (-0.3, 0.3)
+        self.commands.base_velocity.rel_standing_envs = 0.0
+        r = self.rewards
+        # drive
+        r.track_lin_vel_xy_exp.weight = 5.0
+        r.track_lin_vel_xy_exp.params["std"] = 0.25
+        r.lin_vel_error_l1 = RewTerm(func=lin_vel_error_l1, weight=-3.0, params={"command_name": "base_velocity"})
+        r.double_support = RewTerm(
+            func=double_support_while_moving, weight=-2.0,
+            params={"command_name": "base_velocity",
+                    "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ffe"), "min_time": 0.3},
+        )
+        r.feet_air_time.weight = 5.0
+        r.feet_air_time.params["threshold_min"] = 0.05
+        r.feet_air_time.params["threshold_max"] = 0.4
+        r.feet_air_time_biped.weight = 3.0
+        r.feet_air_time_biped.params["threshold_min"] = 0.1
+        r.feet_air_time_biped.params["threshold_max"] = 0.4
+        # regularization back to H level (shape the gait later, after it walks)
+        r.flat_orientation_l2.weight = -0.5
+        r.base_height_l2.weight = -2.0
+        r.joint_deviation_knee.weight = -0.01
+        r.joint_torques_l2.weight = -1.0e-5
+        r.action_rate_l2.weight = -0.01
+        r.joint_vel_l2.weight = -1.0e-4
+        r.joint_acc_l2.weight = -2.5e-8
+
+
+@configclass
+class SkyentificPoclegsStandBoldEnvCfg_PLAY(SkyentificPoclegsStandBoldEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5
+        self.observations.policy.enable_corruption = False
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None

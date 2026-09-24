@@ -503,3 +503,116 @@ class SkyentificPoclegsHShapeEnvCfg_PLAY(SkyentificPoclegsHShapeEnvCfg):
         self.events.base_external_force_torque = None
         self.events.push_robot = None
 ```
+
+## X18g / X18h（2026-09-25 09:00）: 報酬を大胆に（X18e / X18f は取り下げ）
+
+本人: 揺さぶる開始は「押さないと動かない」と同じで本質的でない、重みをもっと大胆に。→ 立っていると損をする報酬に:
+速度追従 重み 5・幅 0.25、速度誤差の L1 罰 −3（指令から遠くても勾配がある）、指令中に両足を 0.3 s 以上着けたままの罰 −2、
+一歩の報酬 feet_air_time 5（閾値 0.05〜0.4 s）・片足支持 3、止まれの指令なし（vx 0.15〜0.6）、正則化は H 並みに戻す、
+トルク上限は H と同じ、4番目 −16°、エントロピー ×2。立ち姿勢・可動域（膝）・静かな開始は StandWalk のまま。観測は変えない。
+- **X18g**: StandBold-v0 をゼロから 1500 iter（cuda:0）
+- **X18h**: StandBold-v0 を X18c_walk の最新 checkpoint（まっすぐ立てて、指令の方へ傾く方策）から 1000 iter（cuda:1）
+
+CLI に渡すもの:
+
+```
+# 依頼: 実験18 の続き X18g / X18h（X18e / X18f はやらない）。タスクを追加し、スモークして、学習コマンド2本を渡して止まる
+
+## 前提
+このプロンプトだけで完結。AGENTS.md・claude\ 以下・メモリは読まない。学習をバックグラウンドで回さない。
+何も削除しない。pip しない。git commit・push しない。既存のクラスの中身は変えない（追記だけ）。
+追記するファイルは先に .bak_20260925_x18gh を取る。前回の X18e/X18f のコードを追記済みなら、そのままでよい（使わない）。
+
+## やること
+1. stand_env_cfg.py（ハードリンク）の末尾に下のコードをそのまま追記。
+2. __init__.py に2つ追記: "Skyentific-Poclegs-StandBold-v0" / "-StandBold-Play-v0" → SkyentificPoclegsStandBoldEnvCfg / _PLAY
+3. エントロピー係数: H_eff13p5 の params\agent.yaml の algorithm.entropy_coef の値を読み、その2倍を
+   Hydra（agent.algorithm.entropy_coef=値）で両方の起動行に付ける。値を報告。
+4. スモーク（各 64 env・5 iter）:
+   - TEST_X18g: StandBold-v0 ゼロから。env.yaml で次を確認して表に: track_lin_vel_xy_exp 5.0 / std 0.25、
+     lin_vel_error_l1 −3、double_support −2（min_time 0.3）、feet_air_time 5.0（0.05〜0.4）、feet_air_time_biped 3.0（0.1〜0.4）、
+     指令 vx 0.15〜0.6・rel_standing_envs 0、effort ffe/hfe 13.5・他 53、HAA 制限 −16〜30（実テンソル）。
+     ログに lin_vel_error_l1 と double_support の項が出ること。
+   - TEST_X18h: StandBold-v0 を X18c_walk の run フォルダの最新 checkpoint から resume。読めた行と checkpoint 名。
+5. 学習コマンド2本（別々の PowerShell、train.py を直接、seed 1、noise_std_type=log、save_interval 100、エントロピー ×2）:
+   - X18g_bold_scratch: StandBold-v0、4096 env、1500 iter、ゼロから、--device cuda:0
+   - X18h_bold_from_c: StandBold-v0、4096 env、1000 iter、--resume --load_run（X18c_walk の run フォルダ名）--checkpoint（その最新）、--device cuda:1
+   nvidia-smi -L が1行なら両方 cuda:0 で書き、その旨を書く。
+6. 再生・評価コマンドを2本ぶん（StandBold-Play-v0、checkpoint 差し替え式）。
+
+## 報告（これで止まる）
+冒頭3行（スモーク2本の合否、エントロピーの値、進めてよいか）、確認した値の表、コマンド（実行フォルダ付き・1行版）。
+
+## 追記するコード
+```
+
+```python
+# X18g / X18h (2026-09-25 09:00): bold reward change instead of disturbed starts (X18e/X18f withdrawn).
+# Standing must stop paying: big tracking weight, a linear velocity-error penalty that has a gradient
+# even far from the command, a penalty for keeping both feet down while a velocity is commanded, big
+# stepping rewards, no zero commands, H-level regularization only, H efforts and HAA -16.
+def lin_vel_error_l1(env, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    asset = env.scene[asset_cfg.name]
+    cmd = env.command_manager.get_command(command_name)
+    return torch.sum(torch.abs(cmd[:, :2] - asset.data.root_lin_vel_b[:, :2]), dim=1)
+
+
+def double_support_while_moving(env, command_name: str, sensor_cfg: SceneEntityCfg, min_time: float) -> torch.Tensor:
+    contact_sensor = env.scene.sensors[sensor_cfg.name]
+    contact_time = contact_sensor.data.current_contact_time[:, sensor_cfg.body_ids]
+    both_down_long = torch.all(contact_time > min_time, dim=1)
+    moving = torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
+    return (both_down_long & moving).float()
+
+
+@configclass
+class SkyentificPoclegsStandBoldEnvCfg(SkyentificPoclegsStandWalkEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        # physics that allowed H to walk
+        for name, eff in {"ffe": 13.5, "hfe": 13.5, "kfe": 53.0, "haa": 53.0, "hr": 53.0}.items():
+            self.scene.robot.actuators[name].effort_limit = eff
+        limits = dict(JOINT_LIMITS_DEG)
+        limits[".*_HAA"] = (-16.0, 30.0)
+        self.events.set_joint_limits.params["limits_deg"] = limits
+        # always a forward command, never "stand"
+        self.commands.base_velocity.ranges.lin_vel_x = (0.15, 0.6)
+        self.commands.base_velocity.ranges.lin_vel_y = (-0.1, 0.1)
+        self.commands.base_velocity.ranges.ang_vel_z = (-0.3, 0.3)
+        self.commands.base_velocity.rel_standing_envs = 0.0
+        r = self.rewards
+        # drive
+        r.track_lin_vel_xy_exp.weight = 5.0
+        r.track_lin_vel_xy_exp.params["std"] = 0.25
+        r.lin_vel_error_l1 = RewTerm(func=lin_vel_error_l1, weight=-3.0, params={"command_name": "base_velocity"})
+        r.double_support = RewTerm(
+            func=double_support_while_moving, weight=-2.0,
+            params={"command_name": "base_velocity",
+                    "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ffe"), "min_time": 0.3},
+        )
+        r.feet_air_time.weight = 5.0
+        r.feet_air_time.params["threshold_min"] = 0.05
+        r.feet_air_time.params["threshold_max"] = 0.4
+        r.feet_air_time_biped.weight = 3.0
+        r.feet_air_time_biped.params["threshold_min"] = 0.1
+        r.feet_air_time_biped.params["threshold_max"] = 0.4
+        # regularization back to H level (shape the gait later, after it walks)
+        r.flat_orientation_l2.weight = -0.5
+        r.base_height_l2.weight = -2.0
+        r.joint_deviation_knee.weight = -0.01
+        r.joint_torques_l2.weight = -1.0e-5
+        r.action_rate_l2.weight = -0.01
+        r.joint_vel_l2.weight = -1.0e-4
+        r.joint_acc_l2.weight = -2.5e-8
+
+
+@configclass
+class SkyentificPoclegsStandBoldEnvCfg_PLAY(SkyentificPoclegsStandBoldEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5
+        self.observations.policy.enable_corruption = False
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None
+```
