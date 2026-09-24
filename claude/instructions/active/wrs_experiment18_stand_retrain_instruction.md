@@ -271,3 +271,12 @@ class SkyentificPoclegsStandEnvCfg_PLAY(SkyentificPoclegsStandEnvCfg):
 4. 再生コマンド（Stand-Play-v0、checkpoint 名だけ差し替える形、例 model_1500.pt）。
 5. 評価コマンド（前回の依頼の「評価コマンド」の内容そのまま）。
 ```
+
+## 結果と本番（2026-09-25 05:00）
+
+- S1 やり直し合格（INIT_Z 0.377、沈み最大 2.96 mm、16/16 両足接地）、S3 合格（`2026-09-25_04-40-56_TEST_X18b`）。評価スクリプト `tools\runs\x18_eval.py`。
+- WRS の Stand-v0 の env.yaml では track_ang_vel_z_exp が 1.0 / std 0.35（ノートPCの rough_env_cfg.py の 0.5 / 0.5 と違う。WRS 側が正）。
+- 本番は2本を並走（別々の PowerShell）。GPU は1本 約 7.4 GB、先に他の isaacsim GUI を閉じる。
+  - **X18_stand_v1**: 設定そのまま。
+  - **X18_stand_v2_soft**: 保険。罰を緩めた版（Hydra 上書き）: joint_vel_l2 −5e-4、joint_acc_l2 −1.25e-7、joint_torques_l2 −5e-5、base_height_l2 −10、flat_orientation_l2 −1.0、feet_air_time の threshold_min 0.2。v1 が罰の重さで歩かなくなった場合の受け皿。
+- 目安: 2本並走で 3000 iter 約 3〜3.5 時間。1500 iter（約 1.5〜2 時間）で一度再生して見る。
