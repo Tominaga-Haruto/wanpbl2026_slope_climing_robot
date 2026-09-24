@@ -356,3 +356,5 @@ class SkyentificPoclegsStandWalkEnvCfg_PLAY(SkyentificPoclegsStandWalkEnvCfg):
         self.events.base_external_force_torque = None
         self.events.push_robot = None
 ```
+
+- 07:36 X18c スモーク合格（`2026-09-25_07-34-17_TEST_X18c`）。再開元 `2026-09-25_05-18-51_X18_stand_v2_soft\model_1300.pt`、本番 run名 X18c_walk、checkpoint は model_1400〜2299。1304 iter 時点は vx 0.00（立往生のまま）、4番目は下限 −10°いっぱい。`x18_eval.py` に `--task` 追加済み。
