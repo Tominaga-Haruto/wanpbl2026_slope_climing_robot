@@ -191,3 +191,102 @@ class SkyentificPoclegsStandWalkEnvCfg_PLAY(SkyentificPoclegsStandWalkEnvCfg):
         self.observations.policy.enable_corruption = False
         self.events.base_external_force_torque = None
         self.events.push_robot = None
+
+
+# X18e / X18f (2026-09-25 08:50): X18c (resume, 2000 it) and X18d (scratch, 400 it) still stood still,
+# leaning toward the command. Suspected: the calm start removed every reason to step (H learned its
+# stepping from being dropped with random velocities), and the HAA/effort limits may make a step hard.
+
+# X18e: StandWalk from scratch, with the H-era physics back (HAA -15, H efforts) and a disturbed start.
+@configclass
+class SkyentificPoclegsStandWalkV2EnvCfg(SkyentificPoclegsStandWalkEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        for name, eff in {"ffe": 13.5, "hfe": 13.5, "kfe": 53.0, "haa": 53.0, "hr": 53.0}.items():
+            self.scene.robot.actuators[name].effort_limit = eff
+        limits = dict(JOINT_LIMITS_DEG)
+        limits[".*_HAA"] = (-16.0, 30.0)
+        self.events.set_joint_limits.params["limits_deg"] = limits
+        self.events.reset_base.params["velocity_range"] = {
+            "x": (-0.3, 0.3), "y": (-0.3, 0.3), "z": (0.0, 0.0),
+            "roll": (-0.3, 0.3), "pitch": (-0.3, 0.3), "yaw": (-0.3, 0.3),
+        }
+        self.events.reset_robot_joints.params["position_range"] = (-0.1, 0.1)
+        self.events.push_robot.interval_range_s = (5.0, 8.0)
+        r = self.rewards
+        r.feet_air_time.params["threshold_min"] = 0.1
+        r.feet_air_time_biped.params["threshold_min"] = 0.0
+
+
+@configclass
+class SkyentificPoclegsStandWalkV2EnvCfg_PLAY(SkyentificPoclegsStandWalkV2EnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5
+        self.observations.policy.enable_corruption = False
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None
+
+
+# X18f: keep H_eff13p5's pose/start (it already walks) and resume it from model_2999.pt, adding only
+# the anti-shuffle rewards and the knee/HAA/HR limits. Default pose and observations are H's, so the
+# checkpoint loads as is.
+H_JOINT_LIMITS_DEG = {
+    ".*_HR": (-25.0, 25.0),
+    ".*_HAA": (-10.0, 30.0),
+    ".*_HFE": (-60.0, 60.0),
+    "LL_KFE": (-14.3, 100.0),
+    "LR_KFE": (-9.2, 100.0),
+    ".*_FFE": (-45.0, 45.0),
+}
+
+
+@configclass
+class SkyentificPoclegsHShapeEnvCfg(SkyentificPoclegsRoughEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        robot = copy.deepcopy(self.scene.robot)
+        for name in ("ffe", "hfe"):
+            robot.actuators[name].effort_limit = 13.5  # same as H_eff13p5
+        self.scene.robot = robot
+        self.scene.terrain.terrain_type = "plane"
+        self.scene.terrain.terrain_generator = None
+        self.curriculum.terrain_levels = None
+        self.curriculum.push_force_levels = None
+        self.commands.base_velocity.ranges.lin_vel_x = (-0.3, 0.6)
+        self.commands.base_velocity.ranges.lin_vel_y = (-0.2, 0.2)
+        self.commands.base_velocity.ranges.ang_vel_z = (-0.6, 0.6)
+        self.events.reset_base.params["velocity_range"] = {
+            "x": (-0.2, 0.2), "y": (-0.2, 0.2), "z": (0.0, 0.0),
+            "roll": (-0.2, 0.2), "pitch": (-0.2, 0.2), "yaw": (-0.2, 0.2),
+        }
+        self.events.reset_robot_joints.params["position_range"] = (0.8, 1.2)
+        self.events.set_joint_limits = EventTerm(
+            func=set_joint_limits_deg,
+            mode="startup",
+            params={"asset_cfg": SceneEntityCfg("robot"), "limits_deg": H_JOINT_LIMITS_DEG},
+        )
+        self.events.scale_all_joint_friction_model.params["friction_distribution_params"] = (1.0, 3.0)
+        r = self.rewards
+        r.action_rate_l2.weight = -0.02
+        r.flat_orientation_l2.weight = -1.0
+        r.joint_torques_l2.weight = -5.0e-5
+        r.feet_air_time.params["threshold_min"] = 0.25
+        r.feet_air_time_biped.weight = 1.0
+        r.feet_air_time_biped.params["threshold_min"] = 0.2
+        r.feet_air_time_biped.params["threshold_max"] = 0.4
+        r.joint_deviation_knee.weight = -0.05
+        r.joint_vel_l2 = RewTerm(func=mdp.joint_vel_l2, weight=-5.0e-4)
+        r.joint_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-1.25e-7)
+
+
+@configclass
+class SkyentificPoclegsHShapeEnvCfg_PLAY(SkyentificPoclegsHShapeEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5
+        self.observations.policy.enable_corruption = False
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None
