@@ -1,6 +1,6 @@
 # WRS 実験18: 立った開始・ほぼまっすぐの既定姿勢・報酬の修正で、ゼロから 3000 iter（準備とスモークまで）
 
-作成 2026-09-25。理由はノートPCチャットの判断（シムの歩行が「膝を曲げたまま 5 Hz のすり足」で、実機の安全制限に掛かる歩き方そのもの。開始は毎回空中から落として速度付き）。
+作成 2026-09-25。**S0〜S2 は実行済み。続きは末尾の「続き（S1 の判断のあと）」の prompt を渡す。**理由はノートPCチャットの判断（シムの歩行が「膝を曲げたまま 5 Hz のすり足」で、実機の安全制限に掛かる歩き方そのもの。開始は毎回空中から落として速度付き）。
 終わったらこのファイルを `../inactive/` へ移す。コードの正本は `my_robot_code/stand_env_cfg.py`（下に全文を埋め込んだ）。
 
 ```
@@ -222,4 +222,52 @@ class SkyentificPoclegsStandEnvCfg_PLAY(SkyentificPoclegsStandEnvCfg):
         self.observations.policy.enable_corruption = False
         self.events.base_external_force_torque = None
         self.events.push_robot = None
+```
+
+## 続き（S1 の判断のあと）— これを CLI に渡す
+
+```
+# 依頼の続き: 実験18 の S1 の判断と、S3（スモークテスト）・学習コマンド
+
+## 前提（前回と同じ）
+このプロンプトだけで完結。AGENTS.md・claude\ 以下・メモリは読まない。学習をバックグラウンドで回さない。
+何も削除しない。pip しない。git commit・push しない。既存 cfg の中身は変えない。
+
+## 判断
+- 「行動 0 で立つこと」は前提から外す。足首の PD（2 本 × 10 N·m/rad）は、胴の倒れようとする剛性
+  （m·g·h ≒ 10 kg × 9.8 × 約 0.3 m ≒ 30 N·m/rad）より弱いので、行動 0 ではどの δ でも立てないのが物理的に正しい。
+  方策が足首を動かして釣り合いを取る前提で進める。足首の stiffness は変えない（実機の Kp と対応しているため）。
+- 倒れる向きが δ=+1 と +2 の間で切り替わったので、δ=+1.5 を既定姿勢に入れる。
+
+## やること
+1. stand_env_cfg.py（ハードリンクなので1か所でよい）を次のとおり変える。.bak_20260925_x18b を取ってから。
+   - STAND_JOINT_POS の HFE と FFE（度）: LL_HFE −2.6、LR_HFE −6.4、LL_FFE +6.9、LR_FFE +5.6（KFE・HR・HAA はそのまま）
+   - INIT_Z = 0.377、BASE_HEIGHT_TARGET = 0.372
+   - reset_robot_joints の下（scale_all_joint_friction_model の行の直前）に、胴の重心の DR を足す:
+       self.events.randomize_base_com = EventTerm(
+           func=mdp.randomize_rigid_body_com,
+           mode="startup",
+           params={
+               "asset_cfg": SceneEntityCfg("robot", body_names="base"),
+               "com_range": {"x": (-0.02, 0.03), "y": (-0.01, 0.01), "z": (-0.01, 0.01)},
+           },
+       )
+     （randomize_rigid_body_com が無い・引数名が違うときは、Isaac Lab のソースの同じ意味の関数に合わせる。無ければこの項だけ外して報告。）
+2. S1 の確認だけやり直す（行動 0、16 env、INIT_Z 0.377）: 最初の 0.2 s の沈み（mm）、両足が床に着いているか、
+   倒れ始めるまでの時間と向き。合否は「沈み 3 mm 以下かつ足が床に着いている」だけ（立ち続けることは問わない）。
+   沈みが 3 mm を超えるなら INIT_Z を 1 mm ずつ下げ、床にめり込んで跳ねる（胴の z が上に動く）手前の値にする。
+3. S3 スモークテスト: Stand-v0、num_envs 64、max_iterations 20、run名 TEST_X18b。落ちずに回ること、
+   報酬の各項目がログに出ること（joint_vel_l2、joint_acc_l2、base_height_l2、feet_air_time_biped を含む）、
+   env.yaml の報酬の重み一覧、randomize_base_com が入っていること。
+4. 学習コマンドは _train_foreground.ps1 を使わず、train.py を直接呼ぶ起動行にする（スクリプトは直さない）。
+   task Skyentific-Poclegs-Stand-v0、num_envs 4096、max_iterations 3000、save_interval 100、run名 X18_stand_v1、
+   ゼロから（resume しない）、headless、seed と noise_std_type などエージェント側は H_eff13p5 の params\agent.yaml と同じ。
+   起動前に nvidia-smi で空きメモリを見る1行も付ける（今 GUI と別プロセスで約 13.9 GB 使用中）。
+
+## 報告（これで止まる）
+1. 冒頭3行: S1 やり直しの合否と INIT_Z、S3 の合否、進めてよいか。
+2. S3 の報酬の重み一覧、変えたもの。
+3. 学習コマンド（実行フォルダ付き・プレースホルダ無し・複数行版と改行なしの1行版）。
+4. 再生コマンド（Stand-Play-v0、checkpoint 名だけ差し替える形、例 model_1500.pt）。
+5. 評価コマンド（前回の依頼の「評価コマンド」の内容そのまま）。
 ```

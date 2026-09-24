@@ -29,18 +29,20 @@ D = math.radians
 
 # physical pose: knee bent 8 deg, HFE -4, FFE -4 (thigh and shank symmetric -> torso upright, foot flat).
 # sim angle = physical angle from straight + CAD offset. HFE+KFE+FFE = 0 on both legs (foot parallel to torso).
+# exp18 S1: zero action never stands (ankle PD 2x10 N*m/rad < m*g*h ~30 N*m/rad); the fall direction flips
+# between delta=+1 and +2 (FFE +delta, HFE -delta), so delta=+1.5 is applied here as the balance point.
 STAND_JOINT_POS = {
     "LL_HR": 0.0, "LR_HR": 0.0,
     "LL_HAA": 0.0, "LR_HAA": 0.0,
-    "LL_HFE": D(-1.1), "LR_HFE": D(-4.9),
+    "LL_HFE": D(-2.6), "LR_HFE": D(-6.4),
     "LL_KFE": D(-4.3), "LR_KFE": D(0.8),
-    "LL_FFE": D(5.4), "LR_FFE": D(4.1),
+    "LL_FFE": D(6.9), "LR_FFE": D(5.6),
 }
 
-# measured by the zero-action stand check (step S1 of exp18): settled base z + 0.003 m.
-INIT_Z = 0.38
-# measured by the same check: settled base z.
-BASE_HEIGHT_TARGET = 0.37
+# exp18 S1: from 0.38 the base sinks 4-5 mm before touching -> start ~1 mm above contact.
+INIT_Z = 0.377
+# standing height ~0.376 minus ~4 mm for walking knee bend.
+BASE_HEIGHT_TARGET = 0.372
 
 # sim joint limits [deg]. KFE lower = physically straight - 2 deg. HAA lower -6 (real feet touch at -8.5..-11).
 JOINT_LIMITS_DEG = {
@@ -106,6 +108,15 @@ class SkyentificPoclegsStandEnvCfg(SkyentificPoclegsRoughEnvCfg):
             func=set_joint_limits_deg,
             mode="startup",
             params={"asset_cfg": SceneEntityCfg("robot"), "limits_deg": JOINT_LIMITS_DEG},
+        )
+        # CoM of the torso: real CoM is uncertain (thought to be a little forward of the body centre)
+        self.events.randomize_base_com = EventTerm(
+            func=mdp.randomize_rigid_body_com,
+            mode="startup",
+            params={
+                "asset_cfg": SceneEntityCfg("robot", body_names="base"),
+                "com_range": {"x": (-0.02, 0.03), "y": (-0.01, 0.01), "z": (-0.01, 0.01)},
+            },
         )
         self.events.scale_all_joint_friction_model.params["friction_distribution_params"] = (1.0, 3.0)
         self.events.randomize_actuator_gains.params["stiffness_distribution_params"] = (0.8, 1.2)
