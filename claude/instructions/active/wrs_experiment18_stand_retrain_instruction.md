@@ -616,3 +616,5 @@ class SkyentificPoclegsStandBoldEnvCfg_PLAY(SkyentificPoclegsStandBoldEnvCfg):
         self.events.base_external_force_torque = None
         self.events.push_robot = None
 ```
+
+- 09:00 X18g/X18h スモーク合格（TEST_X18g・TEST_X18h）。entropy_coef 0.01（H 0.005 の2倍）。X18c_walk は model_2000.pt で止まっていた（X18h の再開元）。GPU は RTX 3090 Ti 1枚（cuda:1 は無い）。他人の録画 record_fixed_cmd（約 6.7 GB、約30分で終了、止められない）が動いているので、X18h を先に起動し、X18g は空きを見て／録画終了後に起動。
