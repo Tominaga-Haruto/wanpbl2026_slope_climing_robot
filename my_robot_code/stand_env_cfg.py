@@ -360,3 +360,191 @@ class SkyentificPoclegsStandBoldEnvCfg_PLAY(SkyentificPoclegsStandBoldEnvCfg):
         self.observations.policy.enable_corruption = False
         self.events.base_external_force_torque = None
         self.events.push_robot = None
+
+
+# =====================================================================================================
+# X20 (2026-09-27): two runs from scratch, both with the upright stand pose of X18 and H's physics.
+#   X20a GaitFull : gait clock in the observation (42 -> 44 dims) + left/right contact schedule reward,
+#                   swing-foot clearance, no flight phase, single-foot air time, termination penalty.
+#   X20b GaitMod  : observation unchanged (42 dims, current transmitter works); StandBold without the
+#                   hopping loopholes and with moderate weights.
+# Why: H shuffled at 5 Hz, X18 v1..X18c stood still, X18h hopped with both feet. None of the reward sets
+# ever asked for alternating feet (claude/reports/2026-09-25_学習し直しX18の結果と考察.md).
+# =====================================================================================================
+from isaaclab.managers import ObservationTermCfg as ObsTerm  # noqa: E402
+
+GAIT_PERIOD_S = 0.7            # one full left+right cycle
+GAIT_STANCE_BAND = 0.1         # |sin| below this: both feet may be down (short double support)
+# measured by exp20 step S1: z of the ll_ffe/lr_ffe body origin (ankle axis) when standing at INIT_Z.
+FOOT_Z_STAND = 0.075
+SWING_CLEARANCE_M = 0.04
+FEET_ORDERED = SceneEntityCfg("contact_forces", body_names=["ll_ffe", "lr_ffe"], preserve_order=True)
+FEET_BODIES_ORDERED = SceneEntityCfg("robot", body_names=["ll_ffe", "lr_ffe"], preserve_order=True)
+
+
+def _gait_sin(env, period: float) -> torch.Tensor:
+    t = env.episode_length_buf.float() * env.step_dt
+    return torch.sin(2.0 * math.pi * t / period)
+
+
+def _is_moving(env, command_name: str) -> torch.Tensor:
+    cmd = env.command_manager.get_command(command_name)
+    return (torch.norm(cmd[:, :2], dim=1) > 0.1) | (cmd[:, 2].abs() > 0.1)
+
+
+def _feet_in_contact(env, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
+    cs = env.scene.sensors[sensor_cfg.name]
+    return cs.data.current_contact_time[:, sensor_cfg.body_ids] > 0.0  # (N, 2) left, right
+
+
+def gait_phase_obs(env, period: float) -> torch.Tensor:
+    t = env.episode_length_buf.float() * env.step_dt
+    ph = 2.0 * math.pi * t / period
+    return torch.stack([torch.sin(ph), torch.cos(ph)], dim=1)
+
+
+def gait_contact_match(env, period: float, command_name: str, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
+    """Fraction of feet (0, 0.5, 1) whose contact matches the clock: sin >= -band -> left stance,
+    sin <= +band -> right stance. When not moving, both feet down is the target."""
+    s = _gait_sin(env, period)
+    want = torch.stack([s >= -GAIT_STANCE_BAND, s <= GAIT_STANCE_BAND], dim=1)
+    want = torch.where(_is_moving(env, command_name).unsqueeze(1), want, torch.ones_like(want))
+    contact = _feet_in_contact(env, sensor_cfg)
+    return (contact == want).float().mean(dim=1)
+
+
+def swing_clearance_deficit(env, period: float, command_name: str, asset_cfg: SceneEntityCfg,
+                            target_z: float) -> torch.Tensor:
+    """Sum over swing feet of how far [m] the foot is below target_z. Zero when not moving."""
+    s = _gait_sin(env, period)
+    swing = torch.stack([s < -GAIT_STANCE_BAND, s > GAIT_STANCE_BAND], dim=1).float()
+    z = env.scene[asset_cfg.name].data.body_pos_w[:, asset_cfg.body_ids, 2]
+    deficit = torch.clamp(target_z - z, min=0.0)
+    return (deficit * swing).sum(dim=1) * _is_moving(env, command_name).float()
+
+
+def flight_phase(env, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
+    """1 when both feet are in the air (hopping / running)."""
+    return (~_feet_in_contact(env, sensor_cfg).any(dim=1)).float()
+
+
+def feet_air_time_single(env, command_name: str, sensor_cfg: SceneEntityCfg, threshold_min: float,
+                         threshold_max: float) -> torch.Tensor:
+    """feet_air_time, but a touchdown only counts while the OTHER foot is on the ground (no hop bonus)."""
+    cs = env.scene.sensors[sensor_cfg.name]
+    first_contact = cs.compute_first_contact(env.step_dt)[:, sensor_cfg.body_ids].float()
+    last_air = cs.data.last_air_time[:, sensor_cfg.body_ids]
+    other_down = _feet_in_contact(env, sensor_cfg).flip(dims=[1]).float()
+    air = torch.clamp(last_air - threshold_min, max=threshold_max - threshold_min)
+    return (air * first_contact * other_down).sum(dim=1) * _is_moving(env, command_name).float()
+
+
+def stand_still_pose(env, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """sum |q - q_default| while the command is ~zero."""
+    asset = env.scene[asset_cfg.name]
+    dev = torch.sum(torch.abs(asset.data.joint_pos - asset.data.default_joint_pos), dim=1)
+    return dev * (~_is_moving(env, command_name)).float()
+
+
+@configclass
+class _X20BaseEnvCfg(SkyentificPoclegsStandEnvCfg):
+    """Upright pose, calm start, knee/HR limits from X18; H's physics (efforts, HAA to -16)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        for name, eff in {"ffe": 13.5, "hfe": 13.5, "kfe": 53.0, "haa": 53.0, "hr": 53.0}.items():
+            self.scene.robot.actuators[name].effort_limit = eff
+        limits = dict(JOINT_LIMITS_DEG)
+        limits[".*_HAA"] = (-16.0, 30.0)
+        self.events.set_joint_limits.params["limits_deg"] = limits
+        self.commands.base_velocity.ranges.lin_vel_x = (-0.2, 0.6)
+        self.commands.base_velocity.ranges.lin_vel_y = (-0.1, 0.1)
+        self.commands.base_velocity.ranges.ang_vel_z = (-0.3, 0.3)
+        r = self.rewards
+        # regularization back to H level (plus light joint vel/acc)
+        r.flat_orientation_l2.weight = -0.5
+        r.base_height_l2.weight = -2.0
+        r.joint_deviation_knee.weight = -0.01
+        r.joint_torques_l2.weight = -1.0e-5
+        r.action_rate_l2.weight = -0.01
+        r.joint_vel_l2.weight = -1.0e-4
+        r.joint_acc_l2.weight = -2.5e-8
+        # remove the per-foot air-time terms that paid for hopping; replaced below
+        r.feet_air_time.weight = 0.0
+        r.feet_air_time_biped.weight = 0.0
+        r.lin_vel_error_l1 = RewTerm(func=lin_vel_error_l1, weight=-1.0, params={"command_name": "base_velocity"})
+        r.no_flight = RewTerm(func=flight_phase, weight=-1.0, params={"sensor_cfg": FEET_ORDERED})
+        r.termination = RewTerm(func=mdp.is_terminated, weight=-10.0)
+
+
+@configclass
+class SkyentificPoclegsGaitModEnvCfg(_X20BaseEnvCfg):
+    """X20b: moderate. Observation unchanged (42 dims)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.commands.base_velocity.rel_standing_envs = 0.05
+        r = self.rewards
+        r.track_lin_vel_xy_exp.weight = 2.0
+        r.track_lin_vel_xy_exp.params["std"] = 0.35
+        r.feet_single_air_time = RewTerm(
+            func=feet_air_time_single, weight=2.0,
+            params={"command_name": "base_velocity", "sensor_cfg": FEET_ORDERED,
+                    "threshold_min": 0.15, "threshold_max": 0.4},
+        )
+        r.feet_air_time_biped.weight = 1.0  # single-stance time, 0.2..0.4 s (from X18)
+        r.double_support = RewTerm(
+            func=double_support_while_moving, weight=-1.0,
+            params={"command_name": "base_velocity", "sensor_cfg": FEET_ORDERED, "min_time": 0.4},
+        )
+
+
+@configclass
+class SkyentificPoclegsGaitFullEnvCfg(_X20BaseEnvCfg):
+    """X20a: everything. Gait clock in the observation (44 dims)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.commands.base_velocity.rel_standing_envs = 0.1
+        self.observations.policy.gait_phase = ObsTerm(func=gait_phase_obs, params={"period": GAIT_PERIOD_S})
+        r = self.rewards
+        r.track_lin_vel_xy_exp.weight = 2.0
+        r.track_lin_vel_xy_exp.params["std"] = 0.25
+        r.gait_contact = RewTerm(
+            func=gait_contact_match, weight=2.0,
+            params={"period": GAIT_PERIOD_S, "command_name": "base_velocity", "sensor_cfg": FEET_ORDERED},
+        )
+        r.swing_clearance = RewTerm(
+            func=swing_clearance_deficit, weight=-20.0,
+            params={"period": GAIT_PERIOD_S, "command_name": "base_velocity",
+                    "asset_cfg": FEET_BODIES_ORDERED, "target_z": FOOT_Z_STAND + SWING_CLEARANCE_M},
+        )
+        r.feet_single_air_time = RewTerm(
+            func=feet_air_time_single, weight=1.0,
+            params={"command_name": "base_velocity", "sensor_cfg": FEET_ORDERED,
+                    "threshold_min": 0.2, "threshold_max": 0.4},
+        )
+        r.stand_still = RewTerm(func=stand_still_pose, weight=-0.5, params={"command_name": "base_velocity"})
+        r.no_flight.weight = -2.0
+
+
+def _play(cfg):
+    cfg.scene.num_envs = 50
+    cfg.scene.env_spacing = 2.5
+    cfg.observations.policy.enable_corruption = False
+    cfg.events.base_external_force_torque = None
+    cfg.events.push_robot = None
+
+
+@configclass
+class SkyentificPoclegsGaitModEnvCfg_PLAY(SkyentificPoclegsGaitModEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
+
+
+@configclass
+class SkyentificPoclegsGaitFullEnvCfg_PLAY(SkyentificPoclegsGaitFullEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
