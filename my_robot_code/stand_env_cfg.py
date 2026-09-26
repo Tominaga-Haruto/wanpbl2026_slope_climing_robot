@@ -469,6 +469,8 @@ class _X20BaseEnvCfg(SkyentificPoclegsStandEnvCfg):
         self.scene.terrain.visual_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.55, 0.55, 0.55))
         if getattr(self.scene, "sky_light", None) is not None:
             self.scene.sky_light.spawn.texture_file = None
+        # the velocity-command arrows load Props/UIElements/arrow_x.usd from Nucleus as well
+        self.commands.base_velocity.debug_vis = False
         for name, eff in {"ffe": 13.5, "hfe": 13.5, "kfe": 53.0, "haa": 53.0, "hr": 53.0}.items():
             self.scene.robot.actuators[name].effort_limit = eff
         limits = dict(JOINT_LIMITS_DEG)

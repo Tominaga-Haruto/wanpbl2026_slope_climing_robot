@@ -311,3 +311,8 @@ from isaaclab.terrains.terrain_generator_cfg import TerrainGeneratorCfg  # noqa:
   save_interval 100、seed 1、entropy_coef 0.005、noise_std_type=log、--device cuda:0、1 本目の 1〜2 iter 後に
   nvidia-smi を見てから 2 本目）。
 ```
+
+## 続き2（03:45）: 速度指令の矢印も Nucleus（`Props/UIElements/arrow_x.usd`）で落ちた → 表示を切る
+
+`_X20BaseEnvCfg` の sky_light の2行の直後に `self.commands.base_velocity.debug_vis = False`（見た目だけ、学習に影響なし）。
+加えて、設定を組み立てた後に http で始まる文字列を全部洗い出し、見た目だけの項目なら無効化してよい、物理に関わる項目なら止まる、と CLI に指示した（チャットで直接渡した）。
