@@ -372,6 +372,9 @@ class SkyentificPoclegsStandBoldEnvCfg_PLAY(SkyentificPoclegsStandBoldEnvCfg):
 # ever asked for alternating feet (claude/reports/2026-09-25_学習し直しX18の結果と考察.md).
 # =====================================================================================================
 from isaaclab.managers import ObservationTermCfg as ObsTerm  # noqa: E402
+import isaaclab.sim as sim_utils  # noqa: E402
+import isaaclab.terrains as terrain_gen  # noqa: E402
+from isaaclab.terrains.terrain_generator_cfg import TerrainGeneratorCfg  # noqa: E402
 
 GAIT_PERIOD_S = 0.7            # one full left+right cycle
 GAIT_STANCE_BAND = 0.1         # |sin| below this: both feet may be down (short double support)
@@ -452,6 +455,20 @@ class _X20BaseEnvCfg(SkyentificPoclegsStandEnvCfg):
 
     def __post_init__(self):
         super().__post_init__()
+        # 2026-09-27: terrain_type="plane" loads Grid/default_environment.usd from the Nucleus S3 URL,
+        # which stopped opening on the WRS machine. Build the same flat floor locally instead:
+        # a generator with one flat mesh sub-terrain, no Nucleus visual material, no sky texture.
+        self.scene.terrain.terrain_type = "generator"
+        self.scene.terrain.terrain_generator = TerrainGeneratorCfg(
+            size=(8.0, 8.0), border_width=20.0, num_rows=10, num_cols=20,
+            horizontal_scale=0.1, vertical_scale=0.005, slope_threshold=0.75, use_cache=False,
+            curriculum=False,
+            sub_terrains={"flat": terrain_gen.MeshPlaneTerrainCfg(proportion=1.0)},
+        )
+        self.scene.terrain.max_init_terrain_level = None
+        self.scene.terrain.visual_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.55, 0.55, 0.55))
+        if getattr(self.scene, "sky_light", None) is not None:
+            self.scene.sky_light.spawn.texture_file = None
         for name, eff in {"ffe": 13.5, "hfe": 13.5, "kfe": 53.0, "haa": 53.0, "hr": 53.0}.items():
             self.scene.robot.actuators[name].effort_limit = eff
         limits = dict(JOINT_LIMITS_DEG)

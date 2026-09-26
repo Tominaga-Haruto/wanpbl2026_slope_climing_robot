@@ -1,7 +1,7 @@
 # WRS 実験20: 左右交互の歩き方を教える2本（X20a 詰め込み版・X20b 適度版）
 
 作成 2026-09-27。背景は `../../reports/2026-09-25_学習し直しX18の結果と考察.md`（H はすり足、X18 は立往生、X18h は両足跳び。どの報酬も「左右交互」を教えていなかった）と、引き継ぎ書 `../../handoffs/active/2026-09-27_X20_左右交互の歩行を教える学習_引き継ぎ.md`。
-コードの正本は `my_robot_code/stand_env_cfg.py` の末尾「X20」節（下に全文を埋め込んだ）。**下の「CLI に渡すもの」ブロックと、その下の「追記するコード」をまとめて新しい CLI チャットに貼る。** 終わったらこのファイルを `../inactive/` へ移す。
+コードの正本は `my_robot_code/stand_env_cfg.py` の末尾「X20」節（下に全文を埋め込んだ）。**下の「CLI に渡すもの」ブロックと、その下の「追記するコード」をまとめて新しい CLI チャットに貼る。** S0 は済み。地面アセットで止まった後は、末尾の「続き（地面をローカルで作る）」を渡す。 終わったらこのファイルを `../inactive/` へ移す。
 
 ```
 # 依頼: 実験20。タスクを4つ追加し、足の高さを測り、スモークして、学習コマンド2本を渡して止まる
@@ -261,4 +261,53 @@ class SkyentificPoclegsGaitFullEnvCfg_PLAY(SkyentificPoclegsGaitFullEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         _play(self)
+```
+
+## 続き（地面をローカルで作る）— 2026-09-27 03:40、S1 で止まった CLI に渡す
+
+CLI の報告: `terrain_type="plane"` が Nucleus の `Grid/default_environment.usd`（S3 の URL）を開けず、X20 も既存の StandBold も環境が作れない（9/25 は動いていた）。Windows からは同じ URL に 200 で届く。→ Nucleus に頼らず、同じ平らな床をローカルで生成する（地形の生成器に平らなメッシュだけ、見た目の素材とスカイのテクスチャも Nucleus を使わない）。
+
+```
+# 依頼の続き: 実験20。地面をローカルで作る修正を入れて、S1・S2 と学習コマンドまで進める
+
+## 前提（前回と同じ）
+このプロンプトだけで完結。AGENTS.md・claude\ 以下・メモリは読まない。学習をバックグラウンドで回さない。
+pip しない。git commit・push しない。Nucleus・Kit の設定は触らない。
+stand_env_cfg.py はハードリンク。**Edit ツールを使わない**（前回リンクが切れた）。python で
+open(path, "r+") で読み、seek(0)・write・truncate して同じファイルを書き換える。書いたあと両パスの
+inode が同じか確かめる。先に .bak_20260927_x20ground を取る。
+
+## 1. 変更（_X20BaseEnvCfg だけ。他のクラスは触らない）
+(a) X20 節の import（`from isaaclab.managers import ObservationTermCfg as ObsTerm  # noqa: E402` の行）の直後に3行足す:
+import isaaclab.sim as sim_utils  # noqa: E402
+import isaaclab.terrains as terrain_gen  # noqa: E402
+from isaaclab.terrains.terrain_generator_cfg import TerrainGeneratorCfg  # noqa: E402
+
+(b) class _X20BaseEnvCfg の __post_init__ の `super().__post_init__()` の直後に、次を足す（インデント 8）:
+        # 2026-09-27: terrain_type="plane" loads Grid/default_environment.usd from the Nucleus S3 URL,
+        # which stopped opening on the WRS machine. Build the same flat floor locally instead:
+        # a generator with one flat mesh sub-terrain, no Nucleus visual material, no sky texture.
+        self.scene.terrain.terrain_type = "generator"
+        self.scene.terrain.terrain_generator = TerrainGeneratorCfg(
+            size=(8.0, 8.0), border_width=20.0, num_rows=10, num_cols=20,
+            horizontal_scale=0.1, vertical_scale=0.005, slope_threshold=0.75, use_cache=False,
+            curriculum=False,
+            sub_terrains={"flat": terrain_gen.MeshPlaneTerrainCfg(proportion=1.0)},
+        )
+        self.scene.terrain.max_init_terrain_level = None
+        self.scene.terrain.visual_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.55, 0.55, 0.55))
+        if getattr(self.scene, "sky_light", None) is not None:
+            self.scene.sky_light.spawn.texture_file = None
+
+(c) それでも別の Nucleus の URL（http で始まる usd・mdl・hdr）を開こうとして落ちるなら、その URL と、
+    それを使っている cfg の項目名を報告して止まる（推測で消さない）。
+
+## 2. 確かめる
+- GaitFull-Play-v0 で env が作れ、床が平ら（16 env の胴の z がどれも 0.37〜0.38 m で始まる）。
+  env.yaml の terrain が generator・sub_terrains が flat のみであること。
+- そのあと前回の S1（FOOT_Z_STAND の実測と書き込み、足の順、新しい報酬の NaN・範囲）と
+  S2（TEST_X20a / TEST_X20b、観測 44 / 42、重みの表）を続け、前回の依頼どおりに報告して止まる。
+- 学習コマンド・再生・評価コマンドの要件は前回のまま（X20a_gait_full / X20b_gait_mod、ゼロから、3000 iter、
+  save_interval 100、seed 1、entropy_coef 0.005、noise_std_type=log、--device cuda:0、1 本目の 1〜2 iter 後に
+  nvidia-smi を見てから 2 本目）。
 ```
