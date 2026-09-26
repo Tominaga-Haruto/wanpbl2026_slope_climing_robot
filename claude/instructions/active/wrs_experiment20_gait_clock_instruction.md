@@ -316,3 +316,5 @@ from isaaclab.terrains.terrain_generator_cfg import TerrainGeneratorCfg  # noqa:
 
 `_X20BaseEnvCfg` の sky_light の2行の直後に `self.commands.base_velocity.debug_vis = False`（見た目だけ、学習に影響なし）。
 加えて、設定を組み立てた後に http で始まる文字列を全部洗い出し、見た目だけの項目なら無効化してよい、物理に関わる項目なら止まる、と CLI に指示した（チャットで直接渡した）。
+
+## 続き3（05:55）: シーン作成が 2 時間止まった → どこで止まっているかを特定する（チャットで直接渡した。本文は同じ）
