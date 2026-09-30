@@ -4,6 +4,8 @@
 
 ## 👉 いま有効な引き継ぎ書
 
+**2026-09-30 16:40: X22（14:00 版、約 4000 iter）は歩けるが、軸足のつま先立ちと足裏の外側の接地。次は X23（接地中の足裏の傾きの罰、`instructions/active/wrs_experiment23_flat_foot_instruction.md`）。送信器の準備は `instructions/active/transmitter_x21_clock_pose_instruction.md`。**
+
 **2026-09-30 11:30: X20a・X20b は 500 iter で両方立往生（本人の目視）。次は X21 の 2 本（X21a まっすぐ寄り・X21b H の姿勢、どちらも同じ時計の参照の振り足を報酬に）。WRS 指示 `instructions/active/wrs_experiment21_gait_reference_instruction.md`、経緯は X20 の引き継ぎ末尾の追記。13:18 本人: X21a・X21b とも約 1200 iter でかくかくしながらもまっすぐ歩けた → 14:50 a 2100・b 2000 で停止。action_rate −0.1・joint_acc −2.5e-7・ref_joint_pos 0.5 で再開する X22a/X22b と動画スクリプト（`instructions/active/wrs_experiment22_smooth_resume_instruction.md`）。送信器の準備 `instructions/active/transmitter_x21_clock_pose_instruction.md`。**
 
 **2026-09-30 10:50 送信器 build `D10_13M_RELAXEDSTART_20260930`（Connect2USB2CAN `ff52526`、`feat/mit-mode`、`.bak_20260930_relaxedstart`、テスト 171 本 OK）: `--relaxed-start`（`--all-axes`・`--stand-seconds` と併用）。立ち姿勢への ramp が終わるまで、角度の中止は D7 から 120°だけ、起動前のずれの上限も 120°、ramp は 15°/s 以下に自動で伸ばす。ramp のあとは従来の中止が全部戻る。D7 のやり直しは電源が落ちた・モーターが再起動したときだけ。摩擦の整理を更新（シムには「電流 × c_p」で入れれば不感帯が Kt なしで合う。1.7〜3.1 倍は不感帯の比として正しく、主因は静止と回転中の違い）。Kt は本人の方針で当面測らず、測るべき条件を引き継ぎ §3c に。**

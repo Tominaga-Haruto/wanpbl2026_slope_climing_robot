@@ -667,3 +667,75 @@ class SkyentificPoclegsGaitRefHEnvCfg_PLAY(SkyentificPoclegsGaitRefHEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         _play(self)
+
+
+# =====================================================================================================
+# X23 (2026-09-30 16:40): X22a/X22b (X21 resumed with action_rate -0.1, joint_acc -2.5e-7) walk at ~4000 iter,
+# but (user's replay) 1) the stance foot rises onto its toe before the other foot swings forward (the body
+# goes up -> looks like bouncing), 2) seen from behind, feet land on the outer edge of the sole.
+# Likely: swing_clearance counts world z of the swing foot, and standing on the toe lifts the whole body,
+# so it is the cheapest clearance; the edge contact is geometry - there is no ankle roll joint, so a leg
+# closed with HAA (narrow stance) tilts the sole by the same angle unless the torso leans with it.
+# Fix: penalize the tilt (pitch and roll) of a foot while it is on the ground. The flat reference is the
+# gravity direction in each foot frame measured at the default pose on flat ground (exp23 step S1).
+# =====================================================================================================
+import isaaclab.utils.math as math_utils  # noqa: E402
+
+# exp23 S1 writes these (gravity [0, 0, -1] seen in the ll_ffe / lr_ffe body frame, feet flat at the default pose).
+FOOT_FLAT_GREF = ((0.0, 0.0, -1.0), (0.0, 0.0, -1.0))
+FOOT_FLAT_GREF_H = ((0.0, 0.0, -1.0), (0.0, 0.0, -1.0))
+
+
+def feet_flat_in_contact(env, sensor_cfg: SceneEntityCfg, asset_cfg: SceneEntityCfg, gref) -> torch.Tensor:
+    """Sum over feet on the ground of |g_foot - g_flat|^2 (~ tilt angle^2 in rad^2, pitch and roll together)."""
+    asset = env.scene[asset_cfg.name]
+    quat = asset.data.body_quat_w[:, asset_cfg.body_ids]  # (N, 2, 4) left, right
+    n = quat.shape[0]
+    g_w = torch.tensor([0.0, 0.0, -1.0], device=quat.device, dtype=quat.dtype).expand(n * 2, 3)
+    g_f = math_utils.quat_apply_inverse(quat.reshape(-1, 4), g_w).reshape(n, 2, 3)
+    ref = torch.tensor(gref, device=quat.device, dtype=quat.dtype).unsqueeze(0)
+    err = torch.sum((g_f - ref) ** 2, dim=-1)
+    contact = _feet_in_contact(env, sensor_cfg).float()
+    return torch.sum(err * contact, dim=1)
+
+
+def _x23(cfg, gref):
+    r = cfg.rewards
+    r.action_rate_l2.weight = -0.1      # exp22 values, now in the cfg
+    r.joint_acc_l2.weight = -2.5e-7
+    r.feet_flat = RewTerm(
+        func=feet_flat_in_contact, weight=-10.0,
+        params={"sensor_cfg": FEET_ORDERED, "asset_cfg": FEET_BODIES_ORDERED, "gref": gref},
+    )
+
+
+@configclass
+class SkyentificPoclegsGaitFlatEnvCfg(SkyentificPoclegsGaitRefEnvCfg):
+    """X23a: X22a + flat stance foot (upright pose)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        _x23(self, FOOT_FLAT_GREF)
+
+
+@configclass
+class SkyentificPoclegsGaitFlatHEnvCfg(SkyentificPoclegsGaitRefHEnvCfg):
+    """X23b: X22b + flat stance foot (H pose)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        _x23(self, FOOT_FLAT_GREF_H)
+
+
+@configclass
+class SkyentificPoclegsGaitFlatEnvCfg_PLAY(SkyentificPoclegsGaitFlatEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
+
+
+@configclass
+class SkyentificPoclegsGaitFlatHEnvCfg_PLAY(SkyentificPoclegsGaitFlatHEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
