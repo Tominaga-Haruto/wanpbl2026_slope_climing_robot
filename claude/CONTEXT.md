@@ -1,12 +1,14 @@
 # プロジェクト現在地
 
-最終更新: 2026-09-30 17:00（シム修正の引き継ぎ、X23）。これはClaude CodeとCodexが共有する短い現在地であり、実験の生ログそのものではない。
+最終更新: 2026-09-30 20:45（シム修正の引き継ぎ、X24）。これはClaude CodeとCodexが共有する短い現在地であり、実験の生ログそのものではない。
 
 ## 👉 いま有効な引き継ぎ書
 
-**2026-09-30 17:00 シム修正の引き継ぎ: `handoffs/active/2026-09-30_シム修正_X20からX23_引き継ぎ.md`（X20 → X21 → X22 → X23 の系譜と見立て、次の仕事）。X20 の引き継ぎはそれで置き換え、inactive へ。**
+**2026-09-30 20:45 シム修正の引き継ぎ: `handoffs/active/2026-09-30_シム修正_X23からX24_引き継ぎ.md`。X23 からの引き継ぎはそれで置き換え、inactive へ。X23a@4200 は前へ歩くが、片足が 0.7 s に 2 回着地（参照の振り足の頂点で床を突く）、軸足の 4番目がシムの下限 −16°に張り付く、少しがに股。次は実験24（`instructions/active/wrs_experiment24_notap_fwdref_instruction.md`）の 2 本: X24a 無難（X23a から resume、参照 A 0.42・床突きの罰・joint_deviation_hip を 4/5番目 −0.5）、X24b 革新（ゼロから、前後に運ぶ参照・軸足からの振り足の高さ・4番目 −8°）。**
 
-**2026-09-30 16:40: X22（14:00 版、約 4000 iter）は歩けるが、軸足のつま先立ちと足裏の外側の接地。次は X23（接地中の足裏の傾きの罰、`instructions/active/wrs_experiment23_flat_foot_instruction.md`）。送信器の準備は `instructions/active/transmitter_x21_clock_pose_instruction.md`。**
+**2026-09-30 17:00 シム修正の引き継ぎ（inactive へ移した）: `handoffs/inactive/2026-09-30_シム修正_X20からX23_引き継ぎ.md`（X20 → X21 → X22 → X23 の系譜と見立て、次の仕事）。X20 の引き継ぎはそれで置き換え、inactive へ。**
+
+**2026-09-30 16:40: X22（14:00 版、約 4000 iter）は歩けるが、軸足のつま先立ちと足裏の外側の接地。次は X23（接地中の足裏の傾きの罰、`instructions/inactive/wrs_experiment23_flat_foot_instruction.md`）。送信器の準備は `instructions/active/transmitter_x21_clock_pose_instruction.md`。**
 
 **2026-09-30 11:30: X20a・X20b は 500 iter で両方立往生（本人の目視）。次は X21 の 2 本（X21a まっすぐ寄り・X21b H の姿勢、どちらも同じ時計の参照の振り足を報酬に）。WRS 指示 `instructions/active/wrs_experiment21_gait_reference_instruction.md`、経緯は X20 の引き継ぎ末尾の追記。13:18 本人: X21a・X21b とも約 1200 iter でかくかくしながらもまっすぐ歩けた → 14:50 a 2100・b 2000 で停止。action_rate −0.1・joint_acc −2.5e-7・ref_joint_pos 0.5 で再開する X22a/X22b と動画スクリプト（`instructions/active/wrs_experiment22_smooth_resume_instruction.md`）。送信器の準備 `instructions/active/transmitter_x21_clock_pose_instruction.md`。**
 

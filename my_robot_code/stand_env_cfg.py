@@ -739,3 +739,130 @@ class SkyentificPoclegsGaitFlatHEnvCfg_PLAY(SkyentificPoclegsGaitFlatHEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         _play(self)
+
+
+# =====================================================================================================
+# X24 (2026-09-30 20:30): X23a (model_4200, user's replay + csv) walks forward (vx 0.275 for 0.3), feet
+# flatter than X22 (outer edge p50 7.5 / 5.7 deg, toe p50 2.6 / -0.4 deg), but every swing is split in two:
+# each foot touches down 2x per 0.7 s cycle (touchdown intervals 0.20 / 0.50 s). In the csv the swing leg
+# reaches the reference peak pose early (HFE -25..-28, KFE +35..+40, FFE -14 deg ~= default + (-A, +2A, -A))
+# and at that pose the foot is ON the floor (ankle z 84 mm vs 81 mm in stance): the reference gives no
+# clearance in the real posture, so the foot taps at mid-swing and lifts again ("R, R, L, L").
+# Also: the stance leg's HAA sits on the sim limit -16 deg in every step (the real feet touch at
+# -8.5..-11 deg and the transmitter clamps at -8), lateral body speed swings +-0.2..0.3 m/s.
+#   X24a GaitNoTap (safe)       : resume X23a. Reference amplitude 0.35 -> 0.42, a penalty for the
+#                                 scheduled swing foot touching the floor in the middle of its window, and
+#                                 joint_deviation_hip on HR + HAA at -0.5 (was HR only, -0.1).
+#   X24b GaitFwd   (innovative) : from scratch, upright pose. Reference swing that also carries the foot
+#                                 from back to front (HFE +-B cos(phase), FFE compensates, B from the vx
+#                                 command), clearance measured against the stance foot (no tiptoe trick),
+#                                 the same tap penalty and hip deviation, HAA limited to -8 deg like the real robot.
+# =====================================================================================================
+X24_REF_SWING_AMP_RAD = 0.42
+X24_TAP_MIN_ACT = 0.3           # swing activation above which a touching swing foot counts as a tap
+X24_FWD_GAIN = 0.625            # rad per (m/s): half stride vx*T/4 over a ~0.28 m leg
+X24_FWD_MAX = 0.35
+X24_REL_CLEARANCE_M = 0.03      # swing ankle above stance ankle at full swing activation
+X24_HAA_LIMITS_DEG = (-8.0, 30.0)
+X24_HIP_DEV_WEIGHT = -0.5         # joint_deviation_hip (L1 of HR and HAA from default), was -0.1 on HR only
+
+
+def swing_foot_tap(env, period: float, command_name: str, sensor_cfg: SceneEntityCfg, min_act: float) -> torch.Tensor:
+    """Number of feet (0..2) touching the floor while the clock says they are in mid-swing."""
+    act = _swing_activation(env, period, command_name)  # zero when not moving
+    contact = _feet_in_contact(env, sensor_cfg).float()
+    return torch.sum((act > min_act).float() * contact, dim=1)
+
+
+def swing_clearance_rel_deficit(env, period: float, command_name: str, asset_cfg: SceneEntityCfg,
+                                target_dz: float) -> torch.Tensor:
+    """Sum over feet of max(0, target_dz * activation - (z_this - z_other)) [m]. Standing on the toe of the
+    stance foot raises both ankles, so it no longer buys clearance."""
+    act = _swing_activation(env, period, command_name)
+    z = env.scene[asset_cfg.name].data.body_pos_w[:, asset_cfg.body_ids, 2]  # (N, 2) left, right
+    dz = z - z.flip(dims=[1])
+    return torch.clamp(target_dz * act - dz, min=0.0).sum(dim=1)
+
+
+def ref_joint_pos_tracking_fwd(env, period: float, command_name: str, asset_cfg: SceneEntityCfg,
+                               amp: float, fwd_gain: float, fwd_max: float) -> torch.Tensor:
+    """X21 reference (lift: HFE -A, KFE +2A, FFE -A times swing activation) plus a fore-aft sweep:
+    left HFE -B cos(ph), right HFE +B cos(ph), FFE the opposite (sole stays parallel), B = gain * vx.
+    +HFE moves the ankle back: the left leg (swings while sin < 0) goes back -> front over pi..2pi and
+    front -> back while it stands; the right leg the same half a cycle later."""
+    asset = env.scene[asset_cfg.name]
+    ids = asset_cfg.joint_ids
+    q = asset.data.joint_pos[:, ids]
+    q0 = asset.data.default_joint_pos[:, ids]
+    act = _swing_activation(env, period, command_name)
+    shape = torch.tensor(REF_SWING_SHAPE, device=q.device, dtype=q.dtype)
+    lift = torch.cat([act[:, 0:1] * shape, act[:, 1:2] * shape], dim=1) * amp
+    t = env.episode_length_buf.float() * env.step_dt
+    c = torch.cos(2.0 * math.pi * t / period)
+    vx = env.command_manager.get_command(command_name)[:, 0]
+    b = torch.clamp(vx * fwd_gain, -fwd_max, fwd_max) * _is_moving(env, command_name).float()
+    hl = -b * c
+    hr = b * c
+    zero = torch.zeros_like(hl)
+    fwd = torch.stack([hl, zero, -hl, hr, zero, -hr], dim=1)
+    err = torch.norm(q - (q0 + lift + fwd), dim=1)
+    return torch.exp(-2.0 * err) - 0.2 * torch.clamp(err, 0.0, 0.5)
+
+
+def _x24_common(cfg):
+    cfg.rewards.ref_joint_pos.params["amp"] = X24_REF_SWING_AMP_RAD
+    # user (2026-09-30 20:20): slightly bow-legged; HAA and HR (4th and 5th from the bottom) need not move much.
+    # Back to H's joint set (HR + HAA, X21 had dropped HAA) and 5x the weight.
+    cfg.rewards.joint_deviation_hip.weight = X24_HIP_DEV_WEIGHT
+    cfg.rewards.joint_deviation_hip.params["asset_cfg"] = SceneEntityCfg("robot", joint_names=[".*HR", ".*HAA"])
+    cfg.rewards.swing_tap = RewTerm(
+        func=swing_foot_tap, weight=-2.0,
+        params={"period": GAIT_PERIOD_S, "command_name": "base_velocity", "sensor_cfg": FEET_ORDERED,
+                "min_act": X24_TAP_MIN_ACT},
+    )
+
+
+@configclass
+class SkyentificPoclegsGaitNoTapEnvCfg(SkyentificPoclegsGaitFlatEnvCfg):
+    """X24a: X23a + higher reference swing + mid-swing tap penalty (resume X23a)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        _x24_common(self)
+
+
+@configclass
+class SkyentificPoclegsGaitFwdEnvCfg(SkyentificPoclegsGaitFlatEnvCfg):
+    """X24b: fore-aft reference swing, clearance against the stance foot, tap penalty, HAA >= -8 deg."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        _x24_common(self)
+        r = self.rewards
+        r.ref_joint_pos.func = ref_joint_pos_tracking_fwd
+        r.ref_joint_pos.params = {
+            "period": GAIT_PERIOD_S, "command_name": "base_velocity", "asset_cfg": X21_SAGITTAL_JOINTS,
+            "amp": X24_REF_SWING_AMP_RAD, "fwd_gain": X24_FWD_GAIN, "fwd_max": X24_FWD_MAX,
+        }
+        r.swing_clearance.func = swing_clearance_rel_deficit
+        r.swing_clearance.params = {
+            "period": GAIT_PERIOD_S, "command_name": "base_velocity", "asset_cfg": FEET_BODIES_ORDERED,
+            "target_dz": X24_REL_CLEARANCE_M,
+        }
+        limits = dict(self.events.set_joint_limits.params["limits_deg"])
+        limits[".*_HAA"] = X24_HAA_LIMITS_DEG
+        self.events.set_joint_limits.params["limits_deg"] = limits
+
+
+@configclass
+class SkyentificPoclegsGaitNoTapEnvCfg_PLAY(SkyentificPoclegsGaitNoTapEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
+
+
+@configclass
+class SkyentificPoclegsGaitFwdEnvCfg_PLAY(SkyentificPoclegsGaitFwdEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
