@@ -1093,3 +1093,44 @@ class SkyentificPoclegsGaitHipNarrowEnvCfg_PLAY(SkyentificPoclegsGaitHipNarrowEn
     def __post_init__(self):
         super().__post_init__()
         _play(self)
+
+
+
+# =====================================================================================================
+# X27 (2026-10-01 07:00): X26 at model_4000 (stand_walk vx 0.3, seed 0, t 2.5..12 s).
+#   X26a GaitHipQuiet: walks L-R-L-R but SPINS in place (+1.05 rad/s, ~570 deg in 10 s). The right 5th turns
+#     the pelvis in stance (+9 deg) and resets in swing (-3): a yaw ratchet. Tracking is in the body frame, so
+#     walking in a circle at 0.4 m/s is still paid; only track_ang_vel_z_exp (0.5) objects, far below hip_quiet -5.
+#     4th open +7 deg the whole time (ankles 0.38 m apart).
+#   X26c GaitHipNarrow: L-R-L-R, 0 repeats, vx 0.32, no fall. BOTH 5th joints on the -8 deg limit 100 % of the
+#     time, action -1.5 (still pushing in). Drifts left 0.08 m/s and ~25 deg of heading in 10 s. 4th: stance
+#     ~0, swing +3..+4 deg.
+# URDF FK (upright stand pose): ankles are 32.6 cm apart at HAA 0 (the HFE motor sits 11 cm outside the HAA
+# axis); CoM is laterally centred between the ankles. Putting the CoM over one ankle would need HAA ~ -30 deg
+# (the sole tilts with it, no ankle roll), so the gait must be fall-and-catch. HR -8 deg (toes in) moves both
+# ankles 1.2 cm forward (-25: 3.7 cm): a way to re-place the feet fore-aft while HFE/KFE/FFE are held by the
+# reference swing (weight 2.0). The real 5th has a 4.5..6.5 deg dead band, so fine HR use will not transfer.
+#   X27a GaitHrLock : X26c + 5th limited to +-2 deg + yaw tracking 0.5 -> 1.5 (resume X26c).
+#   X27b (launch-line overrides on GaitHipNarrow-v0): ref_joint_pos 2.0 -> 0.5, yaw tracking 0.5 -> 1.5.
+# =====================================================================================================
+X27_HR_LOCK_DEG = (-2.0, 2.0)
+X27_YAW_TRACK_WEIGHT = 1.5
+
+
+@configclass
+class SkyentificPoclegsGaitHrLockEnvCfg(SkyentificPoclegsGaitHipNarrowEnvCfg):
+    """X27a: X26c + 5th joint (HR) limited to +-2 deg + stronger yaw tracking (resume X26c)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        limits = dict(self.events.set_joint_limits.params["limits_deg"])
+        limits[".*_HR"] = X27_HR_LOCK_DEG
+        self.events.set_joint_limits.params["limits_deg"] = limits
+        self.rewards.track_ang_vel_z_exp.weight = X27_YAW_TRACK_WEIGHT
+
+
+@configclass
+class SkyentificPoclegsGaitHrLockEnvCfg_PLAY(SkyentificPoclegsGaitHrLockEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
