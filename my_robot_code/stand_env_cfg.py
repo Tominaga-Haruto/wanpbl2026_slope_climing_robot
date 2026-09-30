@@ -866,3 +866,92 @@ class SkyentificPoclegsGaitFwdEnvCfg_PLAY(SkyentificPoclegsGaitFwdEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         _play(self)
+
+
+# =====================================================================================================
+# X25 (2026-09-30 23:10): X24a@5800 (resumed X23a) and X24b@1200 (from scratch, fore-aft reference, HAA >= -8)
+# both still land every foot twice per 0.7 s cycle ("L, L, R, R", 27 same-foot repeats in 54 touchdowns,
+# stand_walk vx 0.3, t 2.5..12 s). The pattern is identical in both: lift 0.10..0.14 s -> touch at the clock
+# peak (|sin| ~ 1) BESIDE the stance foot (fore-aft offset ~ 0 +- 3 cm) for ~0.05 s -> lift 0.12..0.14 s ->
+# land 10..16 cm ahead at the end of the window. At the mid touch the body is moving sideways toward the swing
+# side (+0.07..0.14 m/s in 3 of 4 cases), feet are 32..35 cm apart (ankle_lat +0.16 / -0.15..-0.19 m).
+# Reading: the tap is a lateral catch step. With the stance ankle ~16 cm outside the body the robot cannot stay
+# on one foot for the ~0.3 s swing window of a 0.7 s clock; ~0.13 s is what it holds. swing_tap (-2, i.e.
+# ~ -0.15 per tap) is far cheaper than falling. Swing clearance itself is fine (ankle 25..30 mm above stance).
+#   X25a GaitRetouch (user's idea)  : X24b + a penalty on the same foot landing twice in a row (-0.5 per event,
+#                                     counted on landings after >= 0.04 s in the air). Resume the latest X24b.
+#   X25b GaitCadence (innovative)  : X25a + clock period 0.7 -> 0.45 s (swing window ~0.21 s, close to the
+#                                     ~0.13 s single support the robot holds), fore-aft gain rescaled to the
+#                                     shorter stride, single-stance air-time reward window 0.10..0.25 s.
+#                                     From scratch (the clock in the observation changes speed).
+# =====================================================================================================
+X25_RETOUCH_WEIGHT = -25.0       # x step_dt 0.02 -> -0.5 per same-foot re-landing
+X25_RETOUCH_MIN_AIR_S = 0.04     # landings after a shorter lift (contact flicker) are not counted
+X25_PERIOD_S = 0.45
+X25_FWD_GAIN = 0.40              # vx * T / 4 over a ~0.28 m leg at T = 0.45 (X24: 0.625 at T = 0.7)
+X25_AIR_MIN_S = 0.10
+X25_AIR_MAX_S = 0.25
+
+
+def same_foot_touchdown(env, command_name: str, sensor_cfg: SceneEntityCfg, min_air: float) -> torch.Tensor:
+    """1 when a foot lands and the previous landing (after >= min_air s in the air) was the same foot.
+    The last landing foot is kept on the env (-1 = none) and cleared at the start of every episode."""
+    cs = env.scene.sensors[sensor_cfg.name]
+    first = cs.compute_first_contact(env.step_dt)[:, sensor_cfg.body_ids] > 0          # (N, 2) left, right
+    td = first & (cs.data.last_air_time[:, sensor_cfg.body_ids] > min_air)
+    last = getattr(env, "_x25_last_td_foot", None)
+    if last is None or last.shape[0] != td.shape[0]:
+        last = torch.full((td.shape[0],), -1, dtype=torch.long, device=td.device)
+    last = torch.where(env.episode_length_buf <= 1, torch.full_like(last, -1), last)
+    left, right = td[:, 0], td[:, 1]
+    pen = (left & ~right & (last == 0)) | (right & ~left & (last == 1))
+    last = torch.where(left & ~right, torch.zeros_like(last), last)
+    last = torch.where(right & ~left, torch.ones_like(last), last)
+    last = torch.where(left & right, torch.full_like(last, -1), last)
+    env._x25_last_td_foot = last
+    return pen.float() * _is_moving(env, command_name).float()
+
+
+def _x25_retouch(cfg):
+    cfg.rewards.same_foot_touchdown = RewTerm(
+        func=same_foot_touchdown, weight=X25_RETOUCH_WEIGHT,
+        params={"command_name": "base_velocity", "sensor_cfg": FEET_ORDERED, "min_air": X25_RETOUCH_MIN_AIR_S},
+    )
+
+
+@configclass
+class SkyentificPoclegsGaitRetouchEnvCfg(SkyentificPoclegsGaitFwdEnvCfg):
+    """X25a: X24b + same-foot re-landing penalty (resume X24b)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        _x25_retouch(self)
+
+
+@configclass
+class SkyentificPoclegsGaitCadenceEnvCfg(SkyentificPoclegsGaitRetouchEnvCfg):
+    """X25b: X25a with a 0.45 s clock (observation and every clock-driven reward), from scratch."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.observations.policy.gait_phase.params["period"] = X25_PERIOD_S
+        for term in self.rewards.__dict__.values():
+            if isinstance(term, RewTerm) and isinstance(term.params, dict) and "period" in term.params:
+                term.params["period"] = X25_PERIOD_S
+        self.rewards.ref_joint_pos.params["fwd_gain"] = X25_FWD_GAIN
+        self.rewards.feet_single_air_time.params["threshold_min"] = X25_AIR_MIN_S
+        self.rewards.feet_single_air_time.params["threshold_max"] = X25_AIR_MAX_S
+
+
+@configclass
+class SkyentificPoclegsGaitRetouchEnvCfg_PLAY(SkyentificPoclegsGaitRetouchEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
+
+
+@configclass
+class SkyentificPoclegsGaitCadenceEnvCfg_PLAY(SkyentificPoclegsGaitCadenceEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)

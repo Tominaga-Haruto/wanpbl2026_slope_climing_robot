@@ -1,4 +1,5 @@
 # WRS 実験24: 振り足の途中で床を突く二段の歩きを直す 2 本（X24a 無難・X24b 革新）＋動画スクリプト x24
+実行済み・置き換え済み（2026-09-30 23:20）。結果は X24a@5800・X24b@1200 とも右右左左のまま。後継は `../active/wrs_experiment25_retouch_cadence_instruction.md`。
 
 作成 2026-09-30 20:40。**新しい CLI チャットに「CLI に渡すもの」と「追記するコード」を貼る。**
 前提: 実験23（X23a_flat_upright / X23b_flat_hpose、1000 iter 追加）が終わった。本人の再生（X23a model_4200、stand_walk vx 0.3）の CSV
