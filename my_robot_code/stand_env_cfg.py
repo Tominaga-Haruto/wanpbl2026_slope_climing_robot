@@ -955,3 +955,117 @@ class SkyentificPoclegsGaitCadenceEnvCfg_PLAY(SkyentificPoclegsGaitCadenceEnvCfg
     def __post_init__(self):
         super().__post_init__()
         _play(self)
+
+
+# =====================================================================================================
+# X26 (2026-10-01 02:30): X25b GaitCadence (0.45 s clock, from scratch) is the first policy that walks
+# L-R-L-R: user's replay of model_1200 (stand_walk vx 0.3, seed 0, t 2.5..12 s): 42 touchdowns, 0 same-foot
+# repeats (1.0 landing per foot per cycle), vx 0.324, no fall, no flight, double support 16 %, air time
+# 0.18..0.20 s. The user saw no foot scuffing, only "slightly pigeon-toed"; model_2000 looks the same.
+# CSV: the RIGHT 5th joint (LR_HR) sits at -25 deg (the sim limit, toe pointing IN) 100 % of the walking time,
+# stance and swing alike, action -0.9 (pushing into the limit); the left 5th stays at -2 deg. Standing
+# (command 0, t < 2 s) it is -6 deg and jumps to -25 when walking starts. 4th (HAA) opens +4 / +3.6 deg on
+# average, ankles 0.166 / -0.195 m from the body (width 0.36 m vs 0.34 m standing). Knee p99 501 / 539 deg/s.
+# joint_deviation_hip (L1 of HR + HAA, -0.5) costs only ~0.2 per second at 25 deg, far below what the policy
+# gains from its one-sided trick. User (2026-10-01): walking straight, the 4th and 5th need hardly move.
+# X25a GaitRetouch (same-foot penalty on top of X24b, 0.7 s clock) dodged the penalty by tapping with the
+# OTHER foot (R step, L tap, L step, R tap) and walked wide-legged: dropped (user's replay, no csv analysed).
+#   X26a GaitHipQuiet (safe)       : resume X25b. + L1 of HR and HAA from default, -5, only while the yaw
+#                                     command is small (|wz| < 0.15), so turning still may use the 5th.
+#   X26b GaitMirror   (innovative) : the same env + RSL-RL mirror-symmetry loss (left <-> right swap, clock
+#                                     shifted by half a period), resume X25b. Targets the one-sided habit
+#                                     itself instead of only pricing it.
+# =====================================================================================================
+X26_HIP_QUIET_WEIGHT = -5.0
+X26_WZ_STRAIGHT = 0.15
+X26_MIRROR_LOSS_COEFF = 0.5
+HIP_ROT_ABD_JOINTS = SceneEntityCfg("robot", joint_names=[".*HR", ".*HAA"])
+
+
+def hip_quiet_straight(env, command_name: str, asset_cfg: SceneEntityCfg, wz_max: float) -> torch.Tensor:
+    """Sum over the 4th and 5th joints of |q - default| [rad], only while |yaw command| < wz_max."""
+    asset = env.scene[asset_cfg.name]
+    ids = asset_cfg.joint_ids
+    dev = torch.abs(asset.data.joint_pos[:, ids] - asset.data.default_joint_pos[:, ids]).sum(dim=1)
+    wz = env.command_manager.get_command(command_name)[:, 2].abs()
+    return dev * (wz < wz_max).float()
+
+
+@configclass
+class SkyentificPoclegsGaitHipQuietEnvCfg(SkyentificPoclegsGaitCadenceEnvCfg):
+    """X26a/X26b: X25b + 4th/5th kept near default while walking straight (resume X25b)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.rewards.hip_quiet = RewTerm(
+            func=hip_quiet_straight, weight=X26_HIP_QUIET_WEIGHT,
+            params={"command_name": "base_velocity", "asset_cfg": HIP_ROT_ABD_JOINTS, "wz_max": X26_WZ_STRAIGHT},
+        )
+
+
+@configclass
+class SkyentificPoclegsGaitHipQuietEnvCfg_PLAY(SkyentificPoclegsGaitHipQuietEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
+
+
+# ---- mirror symmetry (X26b). Joint convention (reference/robot_model_conventions.md section 2): the same
+# angle on LL_x and LR_x is the mirror image for every joint, so mirroring a joint vector is a pure L<->R swap.
+# Base frame x forward, y left, z up: mirror in the x-z plane.
+_X26_VEC_SIGNS = {
+    "base_lin_vel": [1.0, -1.0, 1.0],
+    "base_ang_vel": [-1.0, 1.0, -1.0],
+    "projected_gravity": [1.0, -1.0, 1.0],
+    "velocity_commands": [1.0, -1.0, -1.0],
+    "gait_phase": [-1.0, -1.0],  # sin, cos of phase + pi: left swing window <-> right swing window
+}
+_X26_JOINT_TERMS = ("joint_pos", "joint_vel", "actions")
+
+
+def _x26_joint_perm(env) -> list:
+    names = list(env.scene["robot"].joint_names)  # CLI: must equal the action order (check, report)
+    perm = []
+    for n in names:
+        partner = n.replace("LL_", "LR_") if n.startswith("LL_") else n.replace("LR_", "LL_")
+        perm.append(names.index(partner))
+    return perm
+
+
+def _x26_obs_map(env, group: str, device):
+    cache = getattr(env, "_x26_obs_maps", None)
+    if cache is None:
+        cache = {}
+        env._x26_obs_maps = cache
+    if group not in cache:
+        om = env.observation_manager
+        perm = _x26_joint_perm(env)
+        idx, sign, off = [], [], 0
+        for name, dims in zip(om.active_terms[group], om.group_obs_term_dim[group]):
+            d = int(dims[-1]) if len(dims) else 1
+            if name in _X26_VEC_SIGNS and len(_X26_VEC_SIGNS[name]) == d:
+                idx += [off + i for i in range(d)]
+                sign += _X26_VEC_SIGNS[name]
+            elif name in _X26_JOINT_TERMS and d == len(perm):
+                idx += [off + p for p in perm]
+                sign += [1.0] * d
+            else:
+                raise RuntimeError(f"x26 mirror: no rule for obs term '{name}' (dim {d}) in group '{group}'")
+            off += d
+        cache[group] = (torch.tensor(idx, device=device, dtype=torch.long),
+                        torch.tensor(sign, device=device, dtype=torch.float32))
+    return cache[group]
+
+
+def x26_mirror(env, obs=None, actions=None, obs_type: str = "policy"):
+    """RSL-RL data_augmentation_func: returns [original; mirrored] stacked on dim 0 (None stays None).
+    CLI: adapt only the calling convention to the installed rsl_rl (e.g. TensorDict obs), not the maps."""
+    obs_out = act_out = None
+    if obs is not None:
+        group = "policy" if obs_type in ("policy", None) else obs_type
+        idx, sign = _x26_obs_map(env, group, obs.device)
+        obs_out = torch.cat([obs, obs[:, idx] * sign], dim=0)
+    if actions is not None:
+        perm = torch.tensor(_x26_joint_perm(env), device=actions.device, dtype=torch.long)
+        act_out = torch.cat([actions, actions[:, perm]], dim=0)
+    return obs_out, act_out

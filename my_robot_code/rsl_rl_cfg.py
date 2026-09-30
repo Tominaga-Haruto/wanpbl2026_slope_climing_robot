@@ -47,3 +47,22 @@ class SkyentificPoclegsFlatPPORunnerCfg(SkyentificPoclegsRoughPPORunnerCfg):
         self.experiment_name = "skyentific_poclegs_flat"
         self.policy.actor_hidden_dims = [128, 128, 128]
         self.policy.critic_hidden_dims = [128, 128, 128]
+
+
+# X26b (2026-10-01): mirror-symmetry loss on top of the runner GaitFwd-v0 / GaitCadence-v0 use.
+# CLI: replace SkyentificPoclegsRoughPPORunnerCfg below with that runner class if it differs, and fix the
+# import path of x26_mirror to where stand_env_cfg.py actually lives (report both).
+from isaaclab_rl.rsl_rl import RslRlSymmetryCfg  # noqa: E402
+
+from .stand_env_cfg import X26_MIRROR_LOSS_COEFF, x26_mirror  # noqa: E402
+
+
+@configclass
+class SkyentificPoclegsMirrorPPORunnerCfg(SkyentificPoclegsRoughPPORunnerCfg):
+    def __post_init__(self):
+        if hasattr(super(), "__post_init__"):
+            super().__post_init__()
+        self.algorithm.symmetry_cfg = RslRlSymmetryCfg(
+            use_data_augmentation=False, use_mirror_loss=True,
+            mirror_loss_coeff=X26_MIRROR_LOSS_COEFF, data_augmentation_func=x26_mirror,
+        )
