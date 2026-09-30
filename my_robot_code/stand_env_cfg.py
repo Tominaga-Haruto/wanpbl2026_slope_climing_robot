@@ -379,7 +379,7 @@ from isaaclab.terrains.terrain_generator_cfg import TerrainGeneratorCfg  # noqa:
 GAIT_PERIOD_S = 0.7            # one full left+right cycle
 GAIT_STANCE_BAND = 0.1         # |sin| below this: both feet may be down (short double support)
 # measured by exp20 step S1: z of the ll_ffe/lr_ffe body origin (ankle axis) when standing at INIT_Z.
-FOOT_Z_STAND = 0.075
+FOOT_Z_STAND = 0.079  # exp20 S1 on WRS (2026-09-27)
 SWING_CLEARANCE_M = 0.04
 FEET_ORDERED = SceneEntityCfg("contact_forces", body_names=["ll_ffe", "lr_ffe"], preserve_order=True)
 FEET_BODIES_ORDERED = SceneEntityCfg("robot", body_names=["ll_ffe", "lr_ffe"], preserve_order=True)
@@ -564,6 +564,106 @@ class SkyentificPoclegsGaitModEnvCfg_PLAY(SkyentificPoclegsGaitModEnvCfg):
 
 @configclass
 class SkyentificPoclegsGaitFullEnvCfg_PLAY(SkyentificPoclegsGaitFullEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
+
+
+# =====================================================================================================
+# X21 (2026-09-30): X20a_gait_full and X20b_gait_mod both stood still at 500 iter (user's replay).
+# X20a paid for the clock only through binary foot contact: standing with both feet down still earns
+# ~55% of gait_contact, and nothing tells the policy HOW to lift a foot. X21 adds a dense reference swing
+# (humanoid-gym style) driven by the same clock, a clearance target the leg can reach, and drops HAA from
+# the hip-deviation penalty so the feet may come closer (feet are ~33 cm apart at HAA 0 by URDF FK).
+#   X21a GaitRef   : X20a (upright X18 pose, 44 dims) + the above.
+#   X21b GaitRefH  : same rewards, H's crouched default pose (HFE -10 / KFE +20 / FFE -10), calm start.
+#                    Tells whether the upright pose itself blocks stepping.
+# Signs (robot_sim.urdf FK, 2026-09-30): +HFE moves the ankle back (hip extension), +KFE bends the knee,
+# +10 deg on any of HFE/KFE/FFE pitches the sole +10 deg (foot parallel while HFE+KFE+FFE is constant).
+# Swing shape HFE -A, KFE +2A, FFE -A: A = 0.35 rad -> hip flexion 20, knee 40 deg, ankle lift ~25 mm.
+# =====================================================================================================
+X21_SAGITTAL_JOINTS = SceneEntityCfg(
+    "robot", joint_names=["LL_HFE", "LL_KFE", "LL_FFE", "LR_HFE", "LR_KFE", "LR_FFE"], preserve_order=True
+)
+REF_SWING_AMP_RAD = 0.35
+REF_SWING_SHAPE = (-1.0, 2.0, -1.0)  # HFE, KFE, FFE per unit swing activation
+X21_SWING_CLEARANCE_M = 0.025
+
+# H's default pose (skyentific_poclegs.py) and its floor height: by URDF FK the ankle is ~9.8 mm closer
+# to the base than in the upright pose, so INIT_Z 0.377 -> 0.367 (checked in exp21 S1).
+H_STAND_JOINT_POS = {
+    "LL_HR": 0.0, "LR_HR": 0.0,
+    "LL_HAA": 0.0, "LR_HAA": 0.0,
+    "LL_HFE": -0.1745, "LR_HFE": -0.1745,
+    "LL_KFE": 0.3491, "LR_KFE": 0.3491,
+    "LL_FFE": -0.1745, "LR_FFE": -0.1745,
+}
+INIT_Z_H = 0.367
+BASE_HEIGHT_TARGET_H = 0.362
+
+
+def _swing_activation(env, period: float, command_name: str) -> torch.Tensor:
+    """(N, 2) in [0, 1]: left swings while sin < -band, right while sin > +band (same clock as X20a)."""
+    s = _gait_sin(env, period)
+    left = torch.clamp(-s - GAIT_STANCE_BAND, min=0.0) / (1.0 - GAIT_STANCE_BAND)
+    right = torch.clamp(s - GAIT_STANCE_BAND, min=0.0) / (1.0 - GAIT_STANCE_BAND)
+    act = torch.stack([left, right], dim=1)
+    return act * _is_moving(env, command_name).float().unsqueeze(1)
+
+
+def ref_joint_pos_tracking(env, period: float, command_name: str, asset_cfg: SceneEntityCfg,
+                           amp: float) -> torch.Tensor:
+    """exp(-2|q - q_ref|) - 0.2 clamp(|q - q_ref|, 0, 0.5) over HFE/KFE/FFE of both legs.
+    q_ref = default pose + swing offset from the clock; default pose when the command is ~zero."""
+    asset = env.scene[asset_cfg.name]
+    ids = asset_cfg.joint_ids
+    q = asset.data.joint_pos[:, ids]
+    q0 = asset.data.default_joint_pos[:, ids]
+    act = _swing_activation(env, period, command_name)
+    shape = torch.tensor(REF_SWING_SHAPE, device=q.device, dtype=q.dtype)
+    offset = torch.cat([act[:, 0:1] * shape, act[:, 1:2] * shape], dim=1) * amp
+    err = torch.norm(q - (q0 + offset), dim=1)
+    return torch.exp(-2.0 * err) - 0.2 * torch.clamp(err, 0.0, 0.5)
+
+
+@configclass
+class SkyentificPoclegsGaitRefEnvCfg(SkyentificPoclegsGaitFullEnvCfg):
+    """X21a: X20a + reference swing + reachable clearance + HAA free of the hip-deviation penalty."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        r = self.rewards
+        r.ref_joint_pos = RewTerm(
+            func=ref_joint_pos_tracking, weight=2.0,
+            params={"period": GAIT_PERIOD_S, "command_name": "base_velocity",
+                    "asset_cfg": X21_SAGITTAL_JOINTS, "amp": REF_SWING_AMP_RAD},
+        )
+        r.swing_clearance.params["target_z"] = FOOT_Z_STAND + X21_SWING_CLEARANCE_M
+        r.joint_deviation_hip.params["asset_cfg"] = SceneEntityCfg("robot", joint_names=[".*HR"])
+
+
+@configclass
+class SkyentificPoclegsGaitRefHEnvCfg(SkyentificPoclegsGaitRefEnvCfg):
+    """X21b: X21a with H's crouched default pose (calm start kept)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        robot = copy.deepcopy(self.scene.robot)
+        robot.init_state.pos = (0.0, 0.0, INIT_Z_H)
+        robot.init_state.joint_pos = dict(H_STAND_JOINT_POS)
+        self.scene.robot = robot
+        self.rewards.base_height_l2.params["target_height"] = BASE_HEIGHT_TARGET_H
+
+
+@configclass
+class SkyentificPoclegsGaitRefEnvCfg_PLAY(SkyentificPoclegsGaitRefEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
+
+
+@configclass
+class SkyentificPoclegsGaitRefHEnvCfg_PLAY(SkyentificPoclegsGaitRefHEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         _play(self)
