@@ -1,3 +1,5 @@
+> **最新は末尾の追記（02:45）: X26b（鏡映）は取りやめ、X26c（5番目 ±8°）に差し替え。2本とも X25b@2100 から 10000 iter。**
+
 # WRS 実験26: X25b の右の5番目（内股）を直す 2 本（X26a 4/5番目の罰・X26b 左右対称の損失）＋多視点の動画スクリプト x26
 
 作成 2026-10-01 02:40。**本人が X25a・X25b の学習を止めてから、新しい CLI チャットに「CLI に渡すもの」を貼る。**
@@ -258,3 +260,71 @@ class SkyentificPoclegsMirrorPPORunnerCfg(SkyentificPoclegsRoughPPORunnerCfg):
 ```
 ````
 
+
+
+## 追記（2026-10-01 02:45）CLI の報告と返答
+
+- CLI の報告: X26a の S1・S2 合格、x26_video.py も動いた。**X25b@2100 は5番目が左右とも −24.7°（端から 1° 以内 97%）**＝@1200 の「右だけ」から両側に広がっていた。4番目 平均 左 +2.3・右 +0.1°、足の間隔 0.325 m、同じ足の連続 1/45、vx 0.299、膝 p99 約 553°/s。観測は hip_pos(2)・kfe_pos(6)・ffe_pos(2) に分かれていて鏡映の表に無く、X26b は S1 で停止。rsl_rl は 4.x（TensorDict）で x26_mirror を合わせた、agent の import は `..stand_env_cfg`。__init__.py は references 側だけ。
+- 判断: 左右対称の内股なので鏡映では直らない → **X26b 取りやめ**（登録・コードは残す）。代わりに **X26c_hipnarrow（GaitHipNarrow-v0、X26a ＋ 5番目の可動域 ±8°）**。親は 2 本とも X25b model_2100、本人が寝る間に **10000 iter**、save_interval 200。
+
+CLI への返答（同じ CLI チャットに貼る）:
+
+````
+判断です。これで進めて、学習コマンドを出したら止まってください。ユーザーはこのあと寝るので、2本とも長く回します。
+
+## 1. X26b（鏡映）はやめる
+- 左右とも −25° で対称なので、鏡映の損失では直りません。hip_pos・kfe_pos・ffe_pos の規則は足さない。
+- GaitMirror-v0 の登録と x26_mirror・SkyentificPoclegsMirrorPPORunnerCfg は、消さずにそのまま残してください（使わない）。
+
+## 2. 代わりに X26c_hipnarrow を1本（5番目の可動域を ±8° にする）
+罰で値付けするのではなく、可動域の端で物理的に止めます。4番目と同じ扱いです。
+stand_env_cfg.py の末尾に、次をそのまま追記してください（前と同じく r+ で書き、inode を確認）。
+
+```python
+
+
+# X26c (2026-10-01 02:40): X25b@2100 has BOTH 5th joints on -25 deg (toes in, 97 % of the time; at model_1200
+# only the right one was). Symmetric, so the mirror loss (X26b) cannot fix it -> dropped. Instead limit the 5th
+# to +-8 deg like HAA (limit instead of price), on top of X26a's hip_quiet.
+X26_HR_LIMITS_DEG = (-8.0, 8.0)
+
+
+@configclass
+class SkyentificPoclegsGaitHipNarrowEnvCfg(SkyentificPoclegsGaitHipQuietEnvCfg):
+    """X26c: X26a + 5th joint (HR) limited to +-8 deg (resume X25b)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        limits = dict(self.events.set_joint_limits.params["limits_deg"])
+        limits[".*_HR"] = X26_HR_LIMITS_DEG
+        self.events.set_joint_limits.params["limits_deg"] = limits
+
+
+@configclass
+class SkyentificPoclegsGaitHipNarrowEnvCfg_PLAY(SkyentificPoclegsGaitHipNarrowEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
+```
+
+- __init__.py に Skyentific-Poclegs-GaitHipNarrow-v0 / GaitHipNarrow-Play-v0 → SkyentificPoclegsGaitHipNarrowEnvCfg / _PLAY を登録（rsl_rl は GaitCadence-v0 と同じ。鏡映の runner ではない）。
+- 確認（表で）: env.yaml の HR の可動域が −8〜+8、4番目は −8〜+30 のまま、hip_quiet −5.0 がある。
+  親 X25b@2100 の方策で 1 env を vx 0.3 で 5 s 回し、左右の5番目が ±8° の中に収まっている。
+- スモーク TEST_X26c（64 env・5 iter、親 X25b model_2100 から resume）: 親の続きの iter、観測 44、NaN なし。
+
+## 3. 親はどちらも X25b の model_2100
+- 本人は「2000 は 1200 とほぼ同じで良い」と言っています。罰が重くて最初に崩れても、長く回すので戻るのを待ちます。
+
+## 4. 学習コマンド（寝ている間に回す。10000 iter）
+- X26a_hipquiet: GaitHipQuiet-v0、--max_iterations 10000、X25b model_2100 から resume。いま出したコマンドの max_iterations と save_interval だけ変える。
+- X26c_hipnarrow: GaitHipNarrow-v0、同じ形で --run_name X26c_hipnarrow、--max_iterations 10000。
+- どちらも agent.save_interval=200。別々の PowerShell。先頭に nvidia-smi、「1本目の 1〜2 iter 後に空きを見て2本目」。1行版で。
+- 所要時間の見積もり（1本だけのときと、2本並べたときの iter/s から）を1行で。朝までに終わらなければ、途中の checkpoint で見るのでそのままでよい。
+
+## 5. 動画コマンドと再生コマンド
+- X26c 用も、X26a と同じ形で出す（--task Skyentific-Poclegs-GaitHipNarrow-Play-v0 --run X26c_hipnarrow）。例の checkpoint は model_4000.pt。
+- 判定に使う要約はいまのまま（5番目・4番目の平均と端に張り付いた割合、同じ足の連続、前への速度、膝 p99）。
+  X26c は5番目が ±8° の端（端から 1° 以内）に張り付いていないかも見る。
+
+報告は短く: 冒頭3行（X26c の確認・スモークの合否、2本の学習コマンドを出したこと）、表、コマンド。
+````

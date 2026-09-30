@@ -1069,3 +1069,27 @@ def x26_mirror(env, obs=None, actions=None, obs_type: str = "policy"):
         perm = torch.tensor(_x26_joint_perm(env), device=actions.device, dtype=torch.long)
         act_out = torch.cat([actions, actions[:, perm]], dim=0)
     return obs_out, act_out
+
+
+# X26c (2026-10-01 02:40): X25b@2100 has BOTH 5th joints on -25 deg (toes in, 97 % of the time; at model_1200
+# only the right one was). Symmetric, so the mirror loss (X26b) cannot fix it -> dropped. Instead limit the 5th
+# to +-8 deg like HAA (limit instead of price), on top of X26a's hip_quiet.
+X26_HR_LIMITS_DEG = (-8.0, 8.0)
+
+
+@configclass
+class SkyentificPoclegsGaitHipNarrowEnvCfg(SkyentificPoclegsGaitHipQuietEnvCfg):
+    """X26c: X26a + 5th joint (HR) limited to +-8 deg (resume X25b)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        limits = dict(self.events.set_joint_limits.params["limits_deg"])
+        limits[".*_HR"] = X26_HR_LIMITS_DEG
+        self.events.set_joint_limits.params["limits_deg"] = limits
+
+
+@configclass
+class SkyentificPoclegsGaitHipNarrowEnvCfg_PLAY(SkyentificPoclegsGaitHipNarrowEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        _play(self)
